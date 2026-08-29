@@ -571,6 +571,53 @@ class CompatibilityTests(unittest.TestCase):
             self.assertIn(source, copied)
             self.assertTrue(copied[source].startswith("UserLAndLibrary/app/src/main/java/"), source)
 
+    def test_r3_switchover_removes_the_oem_download_provider(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in operations)
+
+        # The receiver, the provider handle, and its import all go.
+        for removed in (
+            "import android.app.DownloadManager",
+            "downloadBroadcastReceiver",
+            "getSystemService(Context.DOWNLOAD_SERVICE)",
+        ):
+            self.assertTrue(
+                any(op.get("type") == "replace" and removed in op.get("old", "")
+                    for op in operations),
+                removed,
+            )
+        self.assertIn("AssetDownloadSignals.observe", blob)
+        self.assertIn("AssetDownloader(assetPreferences, ulaFiles, applicationContext)", blob)
+
+    def test_r3_switchover_operations_run_after_the_r2_ones_they_edit(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+
+        def index_of(predicate):
+            return next(i for i, op in enumerate(operations) if predicate(op))
+
+        # r2 creates the receiver registration; the switchover removes it, so the
+        # ordering between them is load-bearing.
+        creates = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("new", "")
+        )
+        removes = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("old", "")
+        )
+        self.assertLess(creates, removes)
+
+    def test_r3_fsm_reattaches_to_a_download_already_running(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in profile["operations"])
+
+        # Reopening mid-download used to yield IncorrectSessionTransition.
+        self.assertIn("cachedSessionId() == event.session.id", blob)
+        self.assertIn("handleAssetDownloadState(assetDownloader.syncStateWithCache())", blob)
+        self.assertIn("rememberSelection(session.id, filesystem.id)", blob)
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 

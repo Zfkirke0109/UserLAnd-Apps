@@ -180,6 +180,18 @@
       "count": 1
     },
     {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloader.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloader.kt",
+      "old_sha256": "767ff99b824af4fc73fa303dd4be042d4ac3eabd893a394bd3bdce52fc3ada8e"
+    },
+    {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/AssetDownloaderTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/AssetDownloaderTest.kt",
+      "old_sha256": "a08cc9724dd44dcb7750728d5a23fb9d200d0e1b3f705d86e37a820522959b1f"
+    },
+    {
       "type": "replace",
       "path": "app/src/main/AndroidManifest.xml",
       "old": "    <uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\" tools:node=\"remove\"/>\n",
@@ -436,6 +448,62 @@
       "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/build.gradle",
       "anchor": "android {\n",
       "text": "    namespace 'com.freerdp.freerdpcore'\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "import android.app.DownloadManager\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "    private val downloadBroadcastReceiver = object : BroadcastReceiver() {\n        override fun onReceive(context: Context, intent: Intent) {\n            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)\n            if (id == -1L) return\n            else viewModel.submitCompletedDownloadId(id)\n        }\n    }\n\n",
+      "new": "    private var assetDownloadRegistration: AssetDownloadSignals.Registration? = null\n\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager\n        val downloadManagerWrapper = DownloadManagerWrapper(downloadManager, this)\n        val assetDownloader = AssetDownloader(assetPreferences, downloadManagerWrapper, ulaFiles)",
+      "new": "        val assetDownloader = AssetDownloader(assetPreferences, ulaFiles, applicationContext)",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        val downloadFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\n            registerReceiver(\n                downloadBroadcastReceiver,\n                downloadFilter,\n                Context.RECEIVER_EXPORTED\n            )\n        } else {\n            registerReceiver(downloadBroadcastReceiver, downloadFilter)\n        }\n",
+      "new": "        assetDownloadRegistration = AssetDownloadSignals.observe {\n            runOnUiThread { viewModel.submitCompletedDownloadId(0L) }\n        }\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "            is SessionSelected -> currentState is WaitingForSessionSelection\n",
+      "new": "            is SessionSelected -> currentState is WaitingForSessionSelection ||\n                (currentState is DownloadingAssets &&\n                    assetDownloader.cachedSessionId() == event.session.id)\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "    private suspend fun handleSessionSelected(session: Session) {\n        if (activeSessions.isNotEmpty()) {",
+      "new": "    private suspend fun handleSessionSelected(session: Session) {\n        // Reattach to work already running for this session rather than starting\n        // its setup over from the beginning.\n        if (assetDownloader.downloadStateHasBeenCached() &&\n            assetDownloader.cachedSessionId() == session.id) {\n            handleAssetDownloadState(assetDownloader.syncStateWithCache())\n            return\n        }\n\n        if (activeSessions.isNotEmpty()) {",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "new": "        assetDownloader.rememberSelection(session.id, filesystem.id)\n        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        unregisterReceiver(downloadBroadcastReceiver)\n",
+      "new": "        assetDownloadRegistration?.cancel()\n        assetDownloadRegistration = null\n",
       "count": 1
     }
   ]

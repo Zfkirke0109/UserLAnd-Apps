@@ -52,7 +52,7 @@ class PayloadLockTests(unittest.TestCase):
         abis = {}
         for abi in ABIS:
             abis[abi] = {
-                "asset_list": ["assets.tar.gz", "rootfs.tar.gz"],
+                "asset_list": ["busybox", "ld.so.preload", "nosudo"],
                 "assets.txt": self._asset(
                     repository, release, f"{abi}-assets.txt", seed
                 ),
@@ -161,12 +161,15 @@ class PayloadLockTests(unittest.TestCase):
             self.assertIn("unexpected ABI mips", errors)
             self.assertIn("unexpected payload extra.tar.gz", errors)
 
-    def test_asset_list_must_name_exact_two_runtime_payloads(self):
+    def test_asset_list_is_the_support_manifest_not_the_payload_archives(self):
+        # assets.txt lists the distribution support files and never names the
+        # archives themselves, which are recorded under their own keys.
         cases = (
-            ["assets.tar.gz"],
-            ["assets.tar.gz", "rootfs.tar.gz", "unexpected.tar.gz"],
+            (["busybox", "assets.tar.gz"], "must not repeat the payload archives"),
+            (["busybox", "rootfs.tar.gz"], "must not repeat the payload archives"),
+            (["busybox", "assets.txt"], "must not contain assets.txt"),
         )
-        for asset_list in cases:
+        for asset_list, expected in cases:
             with self.subTest(asset_list=asset_list), tempfile.TemporaryDirectory() as directory:
                 lock = self._lock()
                 lock["apps"][0]["abis"]["arm64"]["asset_list"] = asset_list
@@ -174,10 +177,22 @@ class PayloadLockTests(unittest.TestCase):
 
                 errors = "\n".join(verify_payload_lock(lock_path, sources_path))
 
-                self.assertIn(
-                    "asset list must contain assets.tar.gz and rootfs.tar.gz",
-                    errors,
-                )
+                self.assertIn(expected, errors)
+
+    def test_a_real_support_manifest_verifies(self):
+        # Shaped as CypherpunkArmory publishes it: support files only.
+        with tempfile.TemporaryDirectory() as directory:
+            lock = self._lock()
+            for app in lock["apps"]:
+                for abi_record in app["abis"].values():
+                    abi_record["asset_list"] = [
+                        "addNonRootUser.sh", "busybox", "extractFilesystem.sh",
+                        "ld.so.preload", "libdisableselinux.so", "nosudo",
+                        "startSSHServer.sh", "userland_profile.sh",
+                    ]
+            lock_path, sources_path = self._write_fixture(Path(directory), lock)
+
+            self.assertEqual([], verify_payload_lock(lock_path, sources_path))
 
     def test_lock_rejects_repository_or_release_outside_fixed_app_source(self):
         cases = (
@@ -200,7 +215,7 @@ class PayloadLockTests(unittest.TestCase):
         abi = "arm64"
         bodies = {
             f"{abi}-assets.txt": (
-                b"assets.txt ignored\nassets.tar.gz one\nrootfs.tar.gz two\n"
+                b"assets.txt ignored\nbusybox one\nnosudo two\n"
             ),
             f"{abi}-assets.tar.gz": b"assets archive bytes",
             f"{abi}-rootfs.tar.gz": b"rootfs archive bytes",
@@ -230,7 +245,7 @@ class PayloadLockTests(unittest.TestCase):
             lambda url: io.BytesIO(by_url[url]),
         )
 
-        self.assertEqual(["assets.tar.gz", "rootfs.tar.gz"], record["asset_list"])
+        self.assertEqual(["busybox", "nosudo"], record["asset_list"])
         self.assertEqual(
             hashlib.sha256(bodies[f"{abi}-assets.tar.gz"]).hexdigest(),
             record["assets.tar.gz"]["sha256"],
