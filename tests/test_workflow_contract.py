@@ -62,7 +62,7 @@ class WorkflowContractTests(unittest.TestCase):
 
         release_prefix = "Build and release all UserLAnd launcher APKs"
         self.assertEqual(2, smoke.count(release_prefix))
-        self.assertIn("MODE=\"0666\"", smoke)
+        self.assertIn("sudo chmod 0666 /dev/kvm", smoke)
         self.assertIn("test -w /dev/kvm", smoke)
 
         for workflow in (smoke, release):
