@@ -202,6 +202,31 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_android_14_download_receiver_declares_external_sender_access(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        operations = [
+            operation
+            for operation in profile["operations"]
+            if operation.get("path")
+            == "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt"
+        ]
+
+        self.assertTrue(
+            any(
+                "registerReceiver(\n            downloadBroadcastReceiver" in operation.get(
+                    "old", ""
+                )
+                and "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU"
+                in operation.get("new", "")
+                and "Context.RECEIVER_EXPORTED" in operation.get("new", "")
+                and "ContextCompat.RECEIVER_EXPORTED"
+                not in operation.get("new", "")
+                and "DownloadManager.ACTION_DOWNLOAD_COMPLETE"
+                in operation.get("new", "")
+                for operation in operations
+            )
+        )
+
     def test_r2_launcher_feature_permissions_are_minimized(self):
         andacious = Path("apps/andacious/app/src/main/AndroidManifest.xml").read_text()
         self.assertNotIn(
