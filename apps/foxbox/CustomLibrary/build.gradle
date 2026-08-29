@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion 33
-    buildToolsVersion "33.0.0"
+    namespace 'tech.ula.customlibrary'
+
+    compileSdkVersion 35
 
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
 
@@ -79,10 +80,7 @@ android {
         resValue "string", "pref_hide_settings_default", "false"
 
         //these are used to help determine the resolution
-        buildConfigField 'boolean', 'DEFAULT_PREF_CUSTOM_SCALING_ENABLED', 'true'
-        resValue "string", "default_pref_custom_scaling_enabled", "true"
-        buildConfigField 'String', 'DEFAULT_PREF_SCALING', "\"1.0\""
-        resValue "string", "default_pref_scaling", "1.0"
+        //TODO rework these into the math before next Relag merge
         buildConfigField 'boolean', 'FORCE_PORTRAIT_GEOMETRY', 'true'
         buildConfigField 'int', "MAX_DIMENSION", "1000"
         buildConfigField 'int', "MIN_DIMENSION", "360"
@@ -91,6 +89,7 @@ android {
         buildConfigField 'boolean', 'HAS_LOGGER', 'false'
         buildConfigField 'boolean', 'ASK_FOR_FEEDBACK', 'true'
         buildConfigField 'boolean', 'ASK_FOR_CONTRIBUTION', 'false'
+        buildConfigField 'boolean', 'ASK_FOR_PAYMENT', 'true'
 
         //these can be used to remove items from the setting menu
         resValue "string", "settings_enabled", "true"
@@ -126,6 +125,7 @@ android {
         //Need unique provider authorities
         buildConfigField 'String', 'PROVIDER_AUTHORITY', "\"tech.ula.foxbox_pro.provider.fileprovider\""
     }
+    buildFeatures.buildConfig true
 
     buildTypes {
         release {
@@ -134,11 +134,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
 }
 

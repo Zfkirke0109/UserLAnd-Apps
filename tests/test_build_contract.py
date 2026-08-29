@@ -16,6 +16,14 @@ class BuildContractTests(unittest.TestCase):
         self.assertIn("tools/verify_dependency_tree.py", text)
         self.assertIn("UserLAndLibrary", text)
 
+    def test_build_defaults_to_locked_r2_version(self):
+        text = Path("scripts/build_app.sh").read_text()
+
+        self.assertIn("release.lock.json", text)
+        self.assertIn("VERSION_CODE=$(read_release version_code)", text)
+        self.assertIn("VERSION_NAME=$(read_release version_name)", text)
+        self.assertIn("usage: $0 APP_ID [VERSION_CODE VERSION_NAME]", text)
+
 
 if __name__ == "__main__":
     unittest.main()

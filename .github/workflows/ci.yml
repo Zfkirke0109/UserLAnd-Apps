@@ -70,7 +70,7 @@ jobs:
           path: |
             build/shared
             .cache/dependencies
-          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/verify_dependency_tree.py') }}
+          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/stage_support_assets.py', 'tools/verify_dependency_tree.py') }}
 
       - name: Prepare locked shared dependencies
         if: steps.dependency-cache.outputs.cache-hit != 'true'
@@ -84,7 +84,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.app == 'foxbox' && '11' || '17' }}
+          java-version: '17'
           cache: gradle
 
       - name: Verify signing material
@@ -96,26 +96,14 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: scripts/prepare_signing.sh
 
-      - name: Compute release version
-        shell: bash
-        run: |
-          set -euo pipefail
-          version_code=$((2000000000 + GITHUB_RUN_NUMBER))
-          if (( version_code > 2100000000 )); then
-            echo 'GitHub run number exceeds Android version-code range' >&2
-            exit 1
-          fi
-          printf 'VERSION_CODE=%s\n' "$version_code" >> "$GITHUB_ENV"
-          printf 'VERSION_NAME=ci.%s\n' "$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
-
       - name: Build signed APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: scripts/build_app.sh "${{ matrix.app }}" "$VERSION_CODE" "$VERSION_NAME"
+        run: scripts/build_app.sh "${{ matrix.app }}"
 
-      - name: Read expected package metadata
+      - name: Read expected package and r2 metadata
         id: app
         shell: bash
         run: |
@@ -125,9 +113,12 @@ jobs:
 
           apps = json.load(open("sources.lock.json", encoding="utf-8"))["apps"]
           app = next(item for item in apps if item["id"] == sys.argv[1])
+          release = json.load(open("release.lock.json", encoding="utf-8"))
           with open(sys.argv[2], "a", encoding="utf-8") as output:
               output.write(f"package={app['package_id']}\n")
               output.write(f"apk={app['output_name']}\n")
+              output.write(f"version_code={release['version_code']}\n")
+              output.write(f"version_name={release['version_name']}\n")
           PY
 
       - name: Verify APK package, version, and certificate
@@ -136,8 +127,10 @@ jobs:
           set -euo pipefail
           apk="dist/${{ steps.app.outputs.apk }}"
           package="${{ steps.app.outputs.package }}"
+          version_code="${{ steps.app.outputs.version_code }}"
+          version_name="${{ steps.app.outputs.version_name }}"
           badging=$(aapt dump badging "$apk")
-          grep -F "package: name='$package' versionCode='$VERSION_CODE'" <<< "$badging"
+          grep -F "package: name='$package' versionCode='$version_code' versionName='$version_name'" <<< "$badging"
           certificate=$(apksigner verify --verbose --print-certs "$apk" |
             sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           expected=$(tr -d ':' <<< '82:9A:55:6F:C5:8A:D5:24:9B:5D:4C:4A:7F:CB:9A:96:9C:FF:38:26:AA:5C:7E:41:02:C3:13:B2:20:A4:5F:EC' |

@@ -19,5 +19,35 @@
   "native_archive": {
     "url": "https://github.com/iiordanov/remote-desktop-clients/releases/download/dependencies/remote-desktop-clients-libs-1.tar.gz",
     "sha256": "b8cbc1a46ca3237c7002d46737e01b3d9245c70fb78586114402a121a77b140c"
+  },
+  "support_assets": {
+    "repository": "CypherpunkArmory/UserLAnd-Assets-Support",
+    "release": "v1.5.1",
+    "archives": [
+      {
+        "abi": "arm64-v8a",
+        "filename": "arm64-v8a-assets.zip",
+        "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Support/releases/download/v1.5.1/arm64-v8a-assets.zip",
+        "sha256": "ec9bb2e652afb0ceab2cc6830809214ee4d786d31ef8463d0ec213aca67ff9ce"
+      },
+      {
+        "abi": "armeabi-v7a",
+        "filename": "armeabi-v7a-assets.zip",
+        "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Support/releases/download/v1.5.1/armeabi-v7a-assets.zip",
+        "sha256": "af0a2667dbf90076fbc4bdde40538db84950bc596aabe24261a766ae57ccfe41"
+      },
+      {
+        "abi": "x86",
+        "filename": "x86-assets.zip",
+        "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Support/releases/download/v1.5.1/x86-assets.zip",
+        "sha256": "9cb71e2e79fa0d1eb453cf669c8232e0000878a190f5c01f3f17cd01c06ca4d0"
+      },
+      {
+        "abi": "x86_64",
+        "filename": "x86_64-assets.zip",
+        "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Support/releases/download/v1.5.1/x86_64-assets.zip",
+        "sha256": "897e0902202c6c07cb4efd9b0f00f5c33d5d2925092c62b3c14951ba7a371252"
+      }
+    ]
   }
 }

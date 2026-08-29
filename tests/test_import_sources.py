@@ -1,3 +1,4 @@
+import json
 import io
 import subprocess
 import sys
@@ -10,6 +11,18 @@ from tools.import_sources import extract_launcher
 
 
 class ImportTests(unittest.TestCase):
+    def test_foxbox_snapshot_matches_r2_lock(self):
+        source = json.loads(Path("sources.lock.json").read_text())["apps"]
+        foxbox_lock = next(app for app in source if app["id"] == "foxbox")
+        provenance = json.loads(Path("apps/foxbox/SOURCE.json").read_text())
+
+        self.assertEqual(foxbox_lock["repository"], provenance["repository"])
+        self.assertEqual(foxbox_lock["source_ref"], provenance["source_ref"])
+        self.assertEqual(
+            "7f08dcf54fcae40bb96fd20e1c057c8ac89c2fde",
+            provenance["source_ref"],
+        )
+
     def test_cli_can_run_directly(self):
         result = subprocess.run(
             [sys.executable, "tools/import_sources.py", "--help"],

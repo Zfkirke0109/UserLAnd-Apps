@@ -2,6 +2,110 @@
   "extends": "shared.json",
   "operations": [
     {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/PermissionHandler.kt",
+      "source": "compat/r2/PermissionHandler.kt",
+      "old_sha256": "b4f0cc790ad2faadc8317a67515fd56defd4a3b08b218f80d6f674617ef60400"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "old": "<uses-permission tools:node=\"removeAll\"/>",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "    <uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>\n",
+      "text": "    <uses-permission android:name=\"android.permission.ACCESS_WIFI_STATE\"/>\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "old": "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" />",
+      "new": "<uses-permission android:name=\"android.permission.WRITE_EXTERNAL_STORAGE\" android:maxSdkVersion=\"29\" />",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "old": "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" />",
+      "new": "<uses-permission android:name=\"android.permission.READ_EXTERNAL_STORAGE\" android:maxSdkVersion=\"29\" />",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE\" />\n",
+      "text": "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_SPECIAL_USE\" />\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "old": "        <service\n            android:name=\".ServerService\"\n            android:stopWithTask=\"true\" />",
+      "new": "        <service\n            android:name=\".ServerService\"\n            android:foregroundServiceType=\"specialUse\"\n            android:stopWithTask=\"true\">\n            <property\n                android:name=\"android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE\"\n                android:value=\"User-started Linux, SSH, and VNC session runtime\" />\n        </service>",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "app/src/main/AndroidManifest.xml",
+      "old": "    <uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\" tools:node=\"remove\"/>\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "if (!PermissionHandler.permissionsAreGranted(this)) {\n            PermissionHandler.showPermissionsNecessaryDialog(this)",
+      "new": "if (!PermissionHandler.permissionsAreGranted(this, forSession = true)) {\n            PermissionHandler.showPermissionsNecessaryDialog(this, forSession = true)",
+      "count": 2
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "anchor": "    override fun onResume() {\n        super.onResume()\n",
+      "text": "        if (PermissionHandler.consumeAllFilesAccessRequest()) {\n            if (PermissionHandler.permissionsAreGranted(this, forSession = true)) {\n                viewModel.permissionsHaveBeenGranted()\n            } else {\n                viewModel.handleUserInputCancelled()\n                showToast(\n                    getString(\n                        R.string.alert_permissions_necessary_message,\n                        getString(R.string.app_name)\n                    )\n                )\n            }\n        }\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        if (PermissionHandler.permissionsWereGranted(requestCode, grantResults)) {\n            viewModel.permissionsHaveBeenGranted()\n        } else {\n            PermissionHandler.showPermissionsNecessaryDialog(this)\n        }",
+      "new": "        if (PermissionHandler.permissionsWereGranted(requestCode, permissions, grantResults)) {\n            if (PermissionHandler.permissionsAreGranted(this, forSession = true)) {\n                viewModel.permissionsHaveBeenGranted()\n            } else {\n                PermissionHandler.requestNecessaryPermissions(this, forSession = true)\n            }\n        } else {\n            viewModel.handleUserInputCancelled()\n            showToast(\n                getString(\n                    R.string.alert_permissions_necessary_message,\n                    getString(R.string.app_name)\n                )\n            )\n        }",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        startService(serviceIntent)\n        if (autoStarted) {",
+      "new": "        ContextCompat.startForegroundService(this, serviceIntent)\n        if (autoStarted) {",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/ui/FilesystemListFragment.kt",
+      "old": "        if (!PermissionHandler.permissionsAreGranted(activityContext)) {\n            PermissionHandler.showPermissionsNecessaryDialog(activityContext)\n            return\n        }\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/ui/FilesystemEditFragment.kt",
+      "old": "            if (!PermissionHandler.permissionsAreGranted(activityContext)) {\n                PermissionHandler.showPermissionsNecessaryDialog(activityContext)\n                return@setOnClickListener\n            }\n\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "def assetVersion = \"v1.3.4\"",
+      "new": "def assetVersion = \"v1.5.1\"",
+      "count": 1
+    },
+    {
       "type": "replace",
       "path": "build.gradle",
       "old": "kotlin_version = '1.9.20'",
@@ -34,6 +138,13 @@
       "path": "gradle.properties",
       "anchor": "android.useAndroidX=true\n",
       "text": "android.nonTransitiveRClass=false\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/res/navigation/nav_graph.xml",
+      "old": "<!-- app:navGraph is defined dynamically so that startDestination can be defined dynamically\n    according to user preference -->\n<navigation xmlns:app=\"http://schemas.android.com/apk/res-auto\"\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    xmlns:tools=\"http://schemas.android.com/tools\" >",
+      "new": "<navigation xmlns:app=\"http://schemas.android.com/apk/res-auto\"\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    xmlns:tools=\"http://schemas.android.com/tools\"\n    app:startDestination=\"@id/app_list_fragment\">",
       "count": 1
     },
     {
