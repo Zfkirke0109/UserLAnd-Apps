@@ -49,6 +49,7 @@ jobs:
             'platforms;android-35' \
             'build-tools;30.0.3' \
             'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Restore shared dependency cache
         id: dependency-cache
@@ -90,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version_code=$((2000000000 + GITHUB_RUN_NUMBER))
+          version_code=$((2000000000 + GITHUB_RUN_ID / 10000))
           if (( version_code > 2100000000 )); then
             echo 'GitHub run number exceeds Android version-code range' >&2
             exit 1
@@ -129,7 +130,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install APK inspection tools
-        run: sdkmanager 'build-tools;35.0.0'
+        run: |
+          sdkmanager 'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Download all signed APKs
         uses: actions/download-artifact@v4

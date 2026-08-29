@@ -61,6 +61,7 @@ jobs:
             'platforms;android-35' \
             'build-tools;30.0.3' \
             'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Restore shared dependency cache
         id: dependency-cache

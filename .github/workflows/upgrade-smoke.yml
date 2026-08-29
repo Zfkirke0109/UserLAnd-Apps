@@ -2,6 +2,9 @@ name: Install launch and upgrade smoke tests
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -47,6 +50,7 @@ jobs:
             'platforms;android-35' \
             'build-tools;30.0.3' \
             'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Restore shared dependency cache
         id: dependency-cache
@@ -95,8 +99,8 @@ jobs:
               output.write(f"package={app['package_id']}\n")
               output.write(f"apk={app['output_name']}\n")
           PY
-          old_code=$((2000000000 + GITHUB_RUN_NUMBER * 2))
-          new_code=$((old_code + 1))
+          new_code=$((2000000000 + GITHUB_RUN_ID / 10000))
+          old_code=$((new_code - 1))
           test "$new_code" -le 2100000000
           printf 'old_code=%s\n' "$old_code" >> "$GITHUB_OUTPUT"
           printf 'new_code=%s\n' "$new_code" >> "$GITHUB_OUTPUT"
@@ -137,3 +141,71 @@ jobs:
           path: evidence/${{ matrix.app }}
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Upload verified signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-verified-apk
+          path: dist/${{ steps.meta.outputs.apk }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: >-
+      github.event_name == 'push' &&
+      startsWith(github.event.head_commit.message, 'Build and release all UserLAnd launcher APKs')
+    needs: upgrade-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: v2026.08.29-rc1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install APK inspection tools
+        run: |
+          sdkmanager 'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Download all emulator-verified APKs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-verified-apk'
+          path: dist
+          merge-multiple: true
+
+      - name: Generate and verify release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find dist -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 10
+          python3 tools/release_manifest.py \
+            --dist dist \
+            --lock sources.lock.json \
+            --release-tag "$RELEASE_TAG"
+
+      - name: Tag verified commit and publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null; then
+            git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          else
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/* \
+              --verify-tag \
+              --generate-notes \
+              --prerelease
+          fi

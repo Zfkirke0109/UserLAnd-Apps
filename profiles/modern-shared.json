@@ -23,6 +23,13 @@
       "count": 2
     },
     {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "def moshi_version = '1.12.0'",
+      "new": "def moshi_version = '1.14.0'",
+      "count": 1
+    },
+    {
       "type": "insert_after",
       "path": "UserLAndLibrary/app/build.gradle",
       "anchor": "android {\n",

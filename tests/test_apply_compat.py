@@ -77,6 +77,21 @@ class CompatibilityTests(unittest.TestCase):
         self.assertEqual(1, len(scaling_defaults(modern)))
         self.assertEqual([], scaling_defaults(legacy))
 
+    def test_modern_profiles_upgrade_moshi_metadata_parser(self):
+        modern = load_profile(Path("profiles/andacious.json"))
+        legacy = load_profile(Path("profiles/foxbox.json"))
+
+        def has_moshi_upgrade(profile):
+            return any(
+                operation.get("path") == "UserLAndLibrary/app/build.gradle"
+                and operation.get("old") == "def moshi_version = '1.12.0'"
+                and operation.get("new") == "def moshi_version = '1.14.0'"
+                for operation in profile["operations"]
+            )
+
+        self.assertTrue(has_moshi_upgrade(modern))
+        self.assertFalse(has_moshi_upgrade(legacy))
+
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
