@@ -20,6 +20,30 @@
       "sha256": "c71eac02b43f62473c1ea14771c7ca00ff3a17e22084bd817257be5d949394ca"
     },
     {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
+      "sha256": "57949156352e9ef00d297992f6c83043a477ccdd1027774fbd458c7768e193af"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+      "sha256": "4ce307a289dcb33d03bdbe07e265ab07690ee097783a19f2ca9a4a635f31ba07"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3DownloadJournalTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3DownloadJournalTest.kt",
+      "sha256": "b2426b88edc2eaa75aa13637b051084a5683484538692e35809bc3d0c02fd50d"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+      "sha256": "135005827a8d13838e0a2906faf5ab1ea19c867921cdf4515b1112e972f4ddeb"
+    },
+    {
       "type": "replace_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/FilesystemManager.kt",
       "source": "compat/r3/java/tech/ula/library/utils/FilesystemManager.kt",

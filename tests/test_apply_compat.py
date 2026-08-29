@@ -386,6 +386,98 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(1, operation.get("count"))
             self.assertNotIn("@Test", operation["new"])
 
+    def test_r3_transfer_resumes_verifies_and_publishes_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        self.assertTrue(overlay.is_file(), "r3 resumable transfer must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'builder.header("Range", "bytes=$resumeFrom-")',
+            "response.code == HTTP_PARTIAL_CONTENT && resumeFrom > 0",
+            "const val DEFAULT_MAX_ATTEMPTS = 5",
+            "MessageDigest.getInstance(\"SHA-256\")",
+            "output.fd.sync()",
+            "part.renameTo(destination)",
+        ):
+            self.assertIn(required, text)
+
+        # Setup payloads must not go back through the OEM download provider.
+        self.assertNotIn("DownloadManager", text)
+
+    def test_r3_transfer_never_publishes_before_it_verifies(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        consume = text.split("private fun consume(", 1)[1]
+        consume = consume.split("private fun retryable(", 1)[0]
+
+        digest_check = consume.index("if (item.isLocked) {")
+        length_check = consume.index("written != item.expectedBytes")
+        publish = consume.index("publish(part, item.destinationFile)")
+        self.assertLess(length_check, digest_check)
+        self.assertLess(digest_check, publish)
+
+        # A body that fails its locked digest is removed, never left behind.
+        mismatch = consume[digest_check:publish]
+        self.assertIn("part.delete()", mismatch)
+        self.assertIn("item.destinationFile.delete()", mismatch)
+        self.assertIn("terminal = true", mismatch)
+
+    def test_r3_journal_persists_resume_state_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        self.assertTrue(overlay.is_file(), "r3 download journal must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'writer.name("session_id").value(batch.sessionId)',
+            'writer.name("filesystem_id").value(batch.filesystemId)',
+            'writer.name("bytes_written").value(item.bytesWritten)',
+            "stream.fd.sync()",
+            "temporary.renameTo(journalFile)",
+        ):
+            self.assertIn(required, text)
+
+        write = text.split("fun write(", 1)[1].split("\n    fun ", 1)[0]
+        # The descriptor has to still be open when it is synced, and the journal is
+        # only published once those bytes are durable.
+        self.assertLess(write.index("stream.fd.sync()"), write.index("renameTo(journalFile)"))
+
+        # An unreadable journal must not be resumed from.
+        read = text.split("fun read(", 1)[1].split("\n    fun ", 1)[0]
+        self.assertIn("catch (err: IOException)", read)
+        self.assertIn("null", read)
+
+    def test_r3_profile_copies_the_download_transfer_overlay(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        copied = {
+            operation.get("source"): operation.get("path")
+            for operation in profile["operations"]
+            if operation.get("type") == "copy_file"
+        }
+
+        for source, target in (
+            ("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt"),
+            ("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3DownloadJournalTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3DownloadJournalTest.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt"),
+        ):
+            self.assertEqual(target, copied.get(source), source)
+
+    def test_r3_copy_file_sources_are_pinned_to_their_current_bytes(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        for operation in profile["operations"]:
+            if operation.get("type") != "copy_file":
+                continue
+            source = Path(operation["source"])
+            self.assertTrue(source.is_file(), operation["source"])
+            actual = hashlib.sha256(source.read_bytes()).hexdigest()
+            self.assertEqual(actual, operation.get("sha256"), operation["source"])
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 
