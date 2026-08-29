@@ -3,6 +3,13 @@
   "operations": [
     {
       "type": "insert_after",
+      "path": "app/build.gradle",
+      "anchor": "    defaultConfig {\n",
+      "text": "        ndk {\n            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'\n        }\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
       "path": "build.gradle",
       "anchor": "        appVersionName = '24.11.27'\n",
       "text": "        compileApi = 35\n        targetApi = 35\n        minApi = 21\n        toolsVersion = '30.0.3'\n        versionCode = appVersionCode\n        versionName = appVersionName\n",

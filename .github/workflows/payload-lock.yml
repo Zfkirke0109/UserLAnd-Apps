@@ -36,6 +36,9 @@ jobs:
           - arm
           - x86
           - x86_64
+        exclude:
+          - app: devstudio
+            abi: x86
     steps:
       - uses: actions/checkout@v4
 

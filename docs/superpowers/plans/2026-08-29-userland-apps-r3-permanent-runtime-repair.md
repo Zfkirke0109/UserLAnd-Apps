@@ -203,9 +203,11 @@ Expected: import failures because the tools do not exist.
 
 - [ ] **Step 3: Implement schema validation and deterministic projection**
 
-The validator must require exactly ten source-lock package IDs, exactly
-`arm64`, `arm`, `x86`, and `x86_64`, exactly `assets.tar.gz` and
-`rootfs.tar.gz`, a positive release asset ID/size, a 64-lowercase-hex digest,
+The validator must require exactly ten source-lock package IDs and every
+upstream-supported ABI: `arm64`, `arm`, `x86`, and `x86_64` for nine apps, and
+`arm64`, `arm`, and `x86_64` for deVStudio because its releases contain no x86
+assets. It must require exactly `assets.tar.gz` and `rootfs.tar.gz`, a positive
+release asset ID/size, a 64-lowercase-hex digest,
 an HTTPS GitHub release URL containing the fixed tag, and a nonempty literal
 asset list. Render with sorted keys, two-space indentation, and a trailing
 newline.
@@ -218,7 +220,7 @@ Expected: all focused tests pass.
 
 - [ ] **Step 5: Add the payload-hash matrix workflow**
 
-Each launcher/ABI job resolves its exact tag, downloads the three named release
+Each supported launcher/ABI job (39 total) resolves its exact tag, downloads the three named release
 assets, verifies the API-reported byte length, computes SHA-256 while streaming,
 parses the literal assets list, and uploads one JSON record. Aggregation calls:
 

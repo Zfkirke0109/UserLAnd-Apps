@@ -39,6 +39,7 @@ PAYLOAD_SOURCES = {
     "devstudio": {
         "repository": "CypherpunkArmory/UserLAnd-Assets-deVStudio",
         "release": "v0.0.1",
+        "abis": ("arm64", "arm", "x86_64"),
     },
     "inkscape": {
         "repository": "CypherpunkArmory/UserLAnd-Assets-Inkscape",
@@ -57,6 +58,11 @@ PAYLOAD_SOURCES = {
         "release": "v0.0.1",
     },
 }
+
+
+def payload_abis(app_id: str) -> tuple[str, ...]:
+    source = PAYLOAD_SOURCES.get(app_id, {})
+    return tuple(source.get("abis", EXPECTED_ABIS))
 
 
 def _load_json(path: Path, label: str, errors: list[str]) -> dict:
@@ -194,13 +200,14 @@ def verify_payload_lock(
         if not isinstance(abis, dict):
             errors.append(f"{label}: abis must be an object")
             continue
-        for abi in EXPECTED_ABIS:
+        expected_abis = payload_abis(app_id)
+        for abi in expected_abis:
             if abi not in abis:
                 errors.append(f"{label}: missing ABI {abi}")
-        for abi in sorted(set(abis) - set(EXPECTED_ABIS)):
+        for abi in sorted(set(abis) - set(expected_abis)):
             errors.append(f"{label}: unexpected ABI {abi}")
 
-        for abi in EXPECTED_ABIS:
+        for abi in expected_abis:
             abi_record = abis.get(abi)
             if not isinstance(abi_record, dict):
                 continue
@@ -265,9 +272,9 @@ def build_payload_record(
 ) -> dict:
     if app_id not in PAYLOAD_SOURCES:
         raise ValueError(f"unknown app id: {app_id}")
-    if abi not in EXPECTED_ABIS:
-        raise ValueError(f"unsupported ABI: {abi}")
     source = PAYLOAD_SOURCES[app_id]
+    if abi not in payload_abis(app_id):
+        raise ValueError(f"unsupported ABI for {app_id}: {abi}")
     if release_metadata.get("tag_name") != source["release"]:
         raise ValueError(
             f"release tag mismatch for {app_id}: "
@@ -367,7 +374,7 @@ def aggregate_records(sources: dict, records: list[dict]) -> dict:
     for app_id, source_app in source_by_id.items():
         source = PAYLOAD_SOURCES[app_id]
         abis = {}
-        for abi in EXPECTED_ABIS:
+        for abi in payload_abis(app_id):
             record = by_key.get((app_id, abi))
             if record is None:
                 raise ValueError(f"missing record: {app_id}/{abi}")
@@ -391,7 +398,7 @@ def aggregate_records(sources: dict, records: list[dict]) -> dict:
             }
         )
     extra = set(by_key) - {
-        (app_id, abi) for app_id in source_by_id for abi in EXPECTED_ABIS
+        (app_id, abi) for app_id in source_by_id for abi in payload_abis(app_id)
     }
     if extra:
         app_id, abi = sorted(extra)[0]

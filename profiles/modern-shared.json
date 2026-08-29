@@ -2,6 +2,18 @@
   "extends": "shared.json",
   "operations": [
     {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3BusyboxExecutorTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3BusyboxExecutorTest.kt",
+      "sha256": "89acf8f0a42ad611f7de1700aefd37b9ce503b6c464e5b66585f9ebbe1314030"
+    },
+    {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/BusyboxExecutor.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/BusyboxExecutor.kt",
+      "old_sha256": "a0616c39d47c6f05e5fe50564de00bcac8a2f5d499fbe773c2fe73eacd6dc6c3"
+    },
+    {
       "type": "replace_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/PermissionHandler.kt",
       "source": "compat/r2/PermissionHandler.kt",

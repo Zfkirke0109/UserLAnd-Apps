@@ -333,6 +333,60 @@ class PayloadLockTests(unittest.TestCase):
         request = urlopen.call_args.args[0]
         self.assertEqual("application/vnd.github+json", request.get_header("Accept"))
 
+    def test_devstudio_lock_matches_its_three_real_upstream_abis(self):
+        source = PAYLOAD_SOURCES["devstudio"]
+        self.assertEqual(("arm64", "arm", "x86_64"), source["abis"])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sources = {
+                "schema_version": 1,
+                "apps": [
+                    {"id": "devstudio", "package_id": "tech.ula.devstudio"}
+                ],
+            }
+            app = self._app(
+                "devstudio",
+                "tech.ula.devstudio",
+                source["release"],
+                "d",
+            )
+            app["repository"] = source["repository"]
+            del app["abis"]["x86"]
+            for abi in source["abis"]:
+                for logical_name in ("assets.txt", "assets.tar.gz", "rootfs.tar.gz"):
+                    filename = f"{abi}-{logical_name}"
+                    app["abis"][abi][logical_name]["filename"] = filename
+                    app["abis"][abi][logical_name]["url"] = (
+                        f"https://github.com/{source['repository']}/releases/download/"
+                        f"{source['release']}/{filename}"
+                    )
+            lock_path = root / "payloads.lock.json"
+            sources_path = root / "sources.lock.json"
+            lock_path.write_text(
+                json.dumps({"schema_version": 1, "apps": [app]}), encoding="utf-8"
+            )
+            sources_path.write_text(json.dumps(sources), encoding="utf-8")
+
+            self.assertEqual([], verify_payload_lock(lock_path, sources_path))
+
+            app["abis"]["x86"] = copy.deepcopy(app["abis"]["arm"])
+            lock_path.write_text(
+                json.dumps({"schema_version": 1, "apps": [app]}), encoding="utf-8"
+            )
+            self.assertIn(
+                "unexpected ABI x86",
+                "\n".join(verify_payload_lock(lock_path, sources_path)),
+            )
+
+        with self.assertRaisesRegex(ValueError, "unsupported ABI"):
+            build_payload_record(
+                "devstudio",
+                "tech.ula.devstudio",
+                "x86",
+                {"tag_name": source["release"], "assets": []},
+                lambda _url: io.BytesIO(),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

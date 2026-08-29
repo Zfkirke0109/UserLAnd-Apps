@@ -58,8 +58,11 @@ first-run path.
 - Support payload: `CypherpunkArmory/UserLAnd-Assets-Support` v1.5.1, retained
   with an explicit compatibility layer
 - Android coverage: API 35 and API 36
-- CPU payload coverage: all four APK ABIs; full session verification must cover
-  the CI emulator ABI and build-time ELF closure must cover every packaged ABI
+- CPU payload coverage: all upstream-supported APK ABIs. Nine apps retain all
+  four ABIs; deVStudio is limited to arm, arm64, and x86_64 because none of its
+  published asset releases contains x86 payloads. Full session verification
+  must cover the CI emulator ABI and build-time ELF closure must cover every
+  packaged ABI.
 
 ## Architecture
 
@@ -74,8 +77,9 @@ The catalog is generated from GitHub release metadata and downloaded bytes by
 a deterministic repository tool. A matrix workflow computes hashes once, and
 the aggregate verifier rejects missing apps, ABIs, files, sizes, digests,
 duplicate package IDs, mutable `latest` selectors, and mismatched release
-assets. Runtime setup reads the catalog bundled into the APK and does not
-resolve GitHub `latest`.
+assets. The matrix contains 39 real combinations: four ABIs for nine apps and
+three for deVStudio, whose APK excludes unsupported x86. Runtime setup reads
+the catalog bundled into the APK and does not resolve GitHub `latest`.
 
 Custom-filesystem mode remains supported, but its downloads are labelled
 unlocked and must pass archive safety and completeness validation before use.
@@ -182,8 +186,8 @@ contracts wherever executable boundaries exist.
 - Runtime tests: static BusyBox selection, dynamic-library environment,
   malicious tar rejection, extraction failure, false-marker migration,
   anchor verification, and user-creation failure.
-- Catalog tests: ten packages × four ABIs × two tar payloads with exact release,
-  byte length, SHA-256, and bundled asset list.
+- Catalog tests: all 39 supported package/ABI combinations × two tar payloads
+  with exact release, byte length, SHA-256, and bundled asset list.
 - Credit tests: official package mapping, market URI, HTTPS fallback, one-time
   display state, permanent menu access, icon resource, and badge provenance.
 - Emulator tests for every APK: r2 upgrade, clean-data first launch, both real

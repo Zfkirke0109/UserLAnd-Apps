@@ -240,6 +240,42 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_r3_profile_replaces_busybox_executor_and_copies_behavior_test(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        operations = profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "replace_file"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/BusyboxExecutor.kt"
+                and operation.get("source")
+                == "compat/r3/java/tech/ula/library/utils/BusyboxExecutor.kt"
+                and operation.get("old_sha256")
+                == "a0616c39d47c6f05e5fe50564de00bcac8a2f5d499fbe773c2fe73eacd6dc6c3"
+                for operation in operations
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("path", "").endswith("R3BusyboxExecutorTest.kt")
+                for operation in operations
+            )
+        )
+
+    def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
+        profile = load_profile(Path("profiles/devstudio.json"))
+
+        self.assertTrue(
+            any(
+                operation.get("path") == "app/build.gradle"
+                and "abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'"
+                in operation.get("text", "")
+                for operation in profile["operations"]
+            )
+        )
+
     def test_r2_manifest_declares_android_16_storage_notification_and_service_contracts(self):
         profile = load_profile(Path("profiles/andacious.json"))
         operations = "\n".join(

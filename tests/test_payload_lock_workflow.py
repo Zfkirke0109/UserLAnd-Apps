@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 class PayloadLockWorkflowTests(unittest.TestCase):
-    def test_workflow_runs_exact_ten_by_four_matrix_and_retains_records(self):
+    def test_workflow_runs_all_39_real_app_abi_combinations_and_retains_records(self):
         path = Path(".github/workflows/payload-lock.yml")
         self.assertTrue(path.is_file(), "payload-lock workflow must exist")
         text = path.read_text(encoding="utf-8")
@@ -30,6 +30,8 @@ class PayloadLockWorkflowTests(unittest.TestCase):
         self.assertIn("tools/render_runtime_catalog.py", text)
         self.assertIn("payload-record-${{ matrix.app }}-${{ matrix.abi }}", text)
         self.assertIn("payload-lock-r3", text)
+        self.assertIn("exclude:", text)
+        self.assertIn("          - app: devstudio\n            abi: x86\n", text)
 
 
 if __name__ == "__main__":
