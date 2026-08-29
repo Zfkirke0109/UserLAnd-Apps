@@ -137,6 +137,12 @@
     },
     {
       "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/assets/r3-payloads.json",
+      "source": "compat/r3/assets/r3-payloads.json",
+      "sha256": "369b5347211d3d9c0a1ac39445b34e35a4a53f86e65531165f80334539fb86a0"
+    },
+    {
+      "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/AssetDownloadService.kt",
       "source": "compat/r3/java/tech/ula/library/AssetDownloadService.kt",
       "sha256": "fc5398e2d7da187f9a91dbb034b476dea98212c7a89d261d7e03e31f65844700"

@@ -618,6 +618,54 @@ class CompatibilityTests(unittest.TestCase):
         self.assertIn("handleAssetDownloadState(assetDownloader.syncStateWithCache())", blob)
         self.assertIn("rememberSelection(session.id, filesystem.id)", blob)
 
+    def test_r3_runtime_catalog_is_bundled_and_matches_the_lock(self):
+        catalog_path = Path("compat/r3/assets/r3-payloads.json")
+        lock_path = Path("payloads.lock.json")
+        self.assertTrue(lock_path.is_file(), "the r3 payload lock must be committed")
+        self.assertTrue(catalog_path.is_file(), "the bundled runtime catalog must exist")
+
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+        # The catalog is a deterministic projection, so it cannot drift from the lock.
+        from importlib.machinery import SourceFileLoader
+        render = SourceFileLoader(
+            "render_runtime_catalog", "tools/render_runtime_catalog.py"
+        ).load_module()
+        self.assertEqual(render.render_catalog(lock), catalog)
+
+        self.assertEqual(10, len(catalog["apps"]))
+        pairs = sum(len(app["abis"]) for app in catalog["apps"])
+        self.assertEqual(39, pairs, "ten apps across four ABIs, less deVStudio x86")
+
+        for app in catalog["apps"]:
+            for abi, record in app["abis"].items():
+                where = f"{app['id']}/{abi}"
+                self.assertTrue(record["asset_list"], where)
+                for name in ("assets.tar.gz", "rootfs.tar.gz"):
+                    payload = record[name]
+                    self.assertRegex(payload["sha256"], r"^[0-9a-f]{64}$", where)
+                    self.assertGreater(payload["size"], 0, where)
+                    self.assertTrue(
+                        payload["url"].startswith("https://github.com/"), where
+                    )
+                    # Selection is by exact release, never a moving pointer.
+                    self.assertNotIn("/latest/", payload["url"])
+                    self.assertIn(payload["release"], payload["url"], where)
+
+    def test_r3_profile_bundles_the_runtime_catalog_asset(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("source") == "compat/r3/assets/r3-payloads.json"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/assets/r3-payloads.json"
+                for operation in profile["operations"]
+            )
+        )
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 
