@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
+import os
 import re
 import shutil
 import tempfile
@@ -41,6 +43,20 @@ def _resolve(root: Path, relative: str) -> Path:
     return path
 
 
+def _resolve_asset(root: Path, relative: str) -> Path:
+    root = root.resolve()
+    path = (root / relative).resolve()
+    if not path.is_relative_to(root):
+        raise ValueError(f"replacement asset escapes directory: {relative}")
+    if not path.is_file():
+        raise ValueError(f"replacement asset is not a file: {relative}")
+    return path
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def _expected_count(operation: dict, found: int) -> None:
     expected = operation.get("count")
     if not isinstance(expected, int):
@@ -58,6 +74,24 @@ def _replace(path: Path, operation: dict) -> bool:
         path.write_text(updated, encoding="utf-8")
         return True
     return False
+
+
+def _replace_file(
+    path: Path, operation: dict, assets_root: Path
+) -> bool:
+    source = _resolve_asset(assets_root, operation["source"])
+    if path.read_bytes() == source.read_bytes():
+        return False
+    current_sha256 = _sha256(path)
+    if current_sha256 != operation.get("old_sha256"):
+        raise ValueError(
+            "old SHA-256 mismatch for "
+            f"{operation['path']}: {current_sha256}"
+        )
+    mode = path.stat().st_mode
+    path.write_bytes(source.read_bytes())
+    os.chmod(path, mode)
+    return True
 
 
 def _delete_lines(path: Path, operation: dict) -> bool:
@@ -127,7 +161,14 @@ def _assert_absent(path: Path, operation: dict) -> bool:
     return False
 
 
-def apply_profile(root: Path, profile: dict) -> list[str]:
+def apply_profile(
+    root: Path, profile: dict, assets_root: Path | None = None
+) -> list[str]:
+    assets_root = (
+        assets_root.resolve()
+        if assets_root is not None
+        else Path(__file__).resolve().parents[1]
+    )
     handlers = {
         "replace": _replace,
         "delete_lines_matching": _delete_lines,
@@ -138,6 +179,11 @@ def apply_profile(root: Path, profile: dict) -> list[str]:
     changed = []
     for operation in profile.get("operations", []):
         kind = operation.get("type")
+        if kind == "replace_file":
+            path = _resolve(root, operation["path"])
+            if _replace_file(path, operation, assets_root):
+                changed.append(operation["path"])
+            continue
         if kind not in handlers:
             raise ValueError(f"unsupported operation type: {kind}")
         path = _resolve(root, operation["path"])

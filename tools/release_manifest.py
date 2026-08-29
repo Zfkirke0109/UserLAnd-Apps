@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 EXPECTED_CERTIFICATE = "82:9A:55:6F:C5:8A:D5:24:9B:5D:4C:4A:7F:CB:9A:96:9C:FF:38:26:AA:5C:7E:41:02:C3:13:B2:20:A4:5F:EC"
-MIN_VERSION_CODE = 2_000_000_000
-MAX_VERSION_CODE = 2_100_000_000
+EXPECTED_MIN_SDK = 21
+EXPECTED_TARGET_SDK = 35
 
 
 def sha256_file(path: Path) -> str:
@@ -73,8 +73,29 @@ def inspect_apk(path: Path) -> dict:
     }
 
 
-def build_manifest(dist: Path, lock: Path, release_tag: str, generated_at: str) -> dict:
-    apps = json.loads(lock.read_text(encoding="utf-8"))["apps"]
+def _load_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def build_manifest(
+    dist: Path,
+    sources_lock: Path,
+    dependencies_lock: Path,
+    release_lock: Path,
+    generated_at: str,
+) -> dict:
+    sources = _load_json(sources_lock)
+    dependencies = _load_json(dependencies_lock)
+    release = _load_json(release_lock)
+    apps = sources["apps"]
+    release_tag = release["release_tag"]
+    version_code = release["version_code"]
+    version_name = release["version_name"]
+
+    if not version_name.endswith("r2"):
+        raise ValueError("release version_name must end with r2")
+    if release_tag != f"v{version_name}":
+        raise ValueError("release tag must be v followed by version_name")
     expected_names = {app["output_name"] for app in apps}
     actual_paths = list(dist.glob("*.apk"))
     actual_names = {path.name for path in actual_paths}
@@ -88,7 +109,6 @@ def build_manifest(dist: Path, lock: Path, release_tag: str, generated_at: str) 
         raise ValueError(f"APK set mismatch; missing={missing}, extra={extra}")
 
     results = []
-    version_codes = set()
     for app in sorted(apps, key=lambda item: item["id"]):
         apk = dist / app["output_name"]
         metadata = inspect_apk(apk)
@@ -96,11 +116,28 @@ def build_manifest(dist: Path, lock: Path, release_tag: str, generated_at: str) 
             raise ValueError(
                 f"{app['id']} package mismatch: {metadata['package_id']} != {app['package_id']}"
             )
-        if not MIN_VERSION_CODE <= metadata["version_code"] <= MAX_VERSION_CODE:
-            raise ValueError(f"{app['id']} version code is out of range")
+        if metadata["version_code"] != version_code:
+            raise ValueError(
+                f"{app['id']} version_code mismatch: "
+                f"{metadata['version_code']} != {version_code}"
+            )
+        if metadata["version_name"] != version_name:
+            raise ValueError(
+                f"{app['id']} version_name mismatch: "
+                f"{metadata['version_name']} != {version_name}"
+            )
+        if metadata["min_sdk"] != EXPECTED_MIN_SDK:
+            raise ValueError(
+                f"{app['id']} min SDK mismatch: "
+                f"{metadata['min_sdk']} != {EXPECTED_MIN_SDK}"
+            )
+        if metadata["target_sdk"] != EXPECTED_TARGET_SDK:
+            raise ValueError(
+                f"{app['id']} target SDK mismatch: "
+                f"{metadata['target_sdk']} != {EXPECTED_TARGET_SDK}"
+            )
         if metadata["certificate_sha256"] != EXPECTED_CERTIFICATE:
             raise ValueError(f"{app['id']} certificate mismatch")
-        version_codes.add(metadata["version_code"])
         results.append(
             {
                 "id": app["id"],
@@ -112,13 +149,15 @@ def build_manifest(dist: Path, lock: Path, release_tag: str, generated_at: str) 
                 "source_ref": app["source_ref"],
             }
         )
-    if len(version_codes) != 1:
-        raise ValueError(f"release APK version codes differ: {sorted(version_codes)}")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "release_tag": release_tag,
+        "version_name": version_name,
+        "version_code": version_code,
         "generated_at_utc": generated_at,
         "certificate_sha256": EXPECTED_CERTIFICATE,
+        "shared_dependency": dependencies["userland_library"],
+        "support_assets": dependencies["support_assets"],
         "apps": results,
     }
 
@@ -126,15 +165,26 @@ def build_manifest(dist: Path, lock: Path, release_tag: str, generated_at: str) 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Inspect and document release APKs")
     parser.add_argument("--dist", type=Path, default=Path("dist"))
-    parser.add_argument("--lock", type=Path, default=Path("sources.lock.json"))
-    parser.add_argument("--release-tag", required=True)
+    parser.add_argument(
+        "--sources-lock", type=Path, default=Path("sources.lock.json")
+    )
+    parser.add_argument(
+        "--dependencies-lock", type=Path, default=Path("dependencies.lock.json")
+    )
+    parser.add_argument(
+        "--release-lock", type=Path, default=Path("release.lock.json")
+    )
     parser.add_argument(
         "--generated-at-utc",
         default=datetime.now(timezone.utc).isoformat(),
     )
     args = parser.parse_args()
     manifest = build_manifest(
-        args.dist, args.lock, args.release_tag, args.generated_at_utc
+        args.dist,
+        args.sources_lock,
+        args.dependencies_lock,
+        args.release_lock,
+        args.generated_at_utc,
     )
     (args.dist / "release-manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",

@@ -62,7 +62,7 @@ jobs:
           path: |
             build/shared
             .cache/dependencies
-          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/verify_dependency_tree.py') }}
+          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/stage_support_assets.py', 'tools/verify_dependency_tree.py') }}
 
       - name: Prepare locked shared dependencies
         if: steps.dependency-cache.outputs.cache-hit != 'true'
@@ -76,7 +76,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.app == 'foxbox' && '11' || '17' }}
+          java-version: '17'
           cache: gradle
 
       - name: Verify signing material
@@ -87,7 +87,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: scripts/prepare_signing.sh
 
-      - name: Read app metadata and version pair
+      - name: Read app and r2 metadata
         id: meta
         shell: bash
         run: |
@@ -98,17 +98,35 @@ jobs:
 
           apps = json.load(open("sources.lock.json", encoding="utf-8"))["apps"]
           app = next(item for item in apps if item["id"] == sys.argv[1])
+          release = json.load(open("release.lock.json", encoding="utf-8"))
           with open(sys.argv[2], "a", encoding="utf-8") as output:
               output.write(f"package={app['package_id']}\n")
               output.write(f"apk={app['output_name']}\n")
+              output.write(f"version_name={release['version_name']}\n")
           PY
-          new_code=$((2000000000 + GITHUB_RUN_ID / 10000))
-          old_code=$((new_code - 1))
-          test "$new_code" -le 2100000000
-          printf 'old_code=%s\n' "$old_code" >> "$GITHUB_OUTPUT"
-          printf 'new_code=%s\n' "$new_code" >> "$GITHUB_OUTPUT"
 
-      - name: Build signed upgrade pair
+      - name: Download published rc1 APK and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rc1_dir="$RUNNER_TEMP/rc1"
+          mkdir -p "$rc1_dir"
+          gh release download v2026.08.29-rc1 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "${{ steps.meta.outputs.apk }}" \
+            --dir "$rc1_dir"
+          gh release download v2026.08.29-rc1 \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern SHA256SUMS \
+            --dir "$rc1_dir"
+          grep -F "  ${{ steps.meta.outputs.apk }}" "$rc1_dir/SHA256SUMS" \
+            > "$rc1_dir/expected-sha256"
+          (cd "$rc1_dir" && sha256sum --check expected-sha256)
+          cp "$rc1_dir/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/old.apk"
+
+      - name: Build signed r2 APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -116,15 +134,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          scripts/build_app.sh \
-            "${{ matrix.app }}" \
-            "${{ steps.meta.outputs.old_code }}" \
-            "smoke.${GITHUB_RUN_NUMBER}.old"
-          cp "dist/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/old.apk"
-          scripts/build_app.sh \
-            "${{ matrix.app }}" \
-            "${{ steps.meta.outputs.new_code }}" \
-            "smoke.${GITHUB_RUN_NUMBER}.new"
+          scripts/build_app.sh "${{ matrix.app }}"
           cp "dist/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/new.apk"
 
       - name: Set up Java 17 for emulator tools
@@ -149,7 +159,7 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}"
+          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}" "${{ steps.meta.outputs.version_name }}"
 
       - name: Upload emulator evidence
         if: always()
@@ -177,7 +187,7 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_TAG: v2026.08.29-rc1
+      RELEASE_TAG: v2026.08.29-r2
     steps:
       - uses: actions/checkout@v4
 
@@ -196,6 +206,31 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Download all runtime evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-upgrade-evidence'
+          path: evidence
+
+      - name: Require ten complete runtime evidence bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t bundles < <(
+            find evidence -mindepth 1 -maxdepth 1 -type d \
+              -name '*-upgrade-evidence' -print | sort
+          )
+          test "${#bundles[@]}" -eq 10
+          for bundle in "${bundles[@]}"; do
+            for required in \
+              pid-stability.txt \
+              ui.xml \
+              permissions.txt \
+              screenshot.png; do
+              test -s "$bundle/$required"
+            done
+          done
+
       - name: Generate and verify release metadata
         shell: bash
         run: |
@@ -203,10 +238,11 @@ jobs:
           test "$(find dist -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 10
           python3 tools/release_manifest.py \
             --dist dist \
-            --lock sources.lock.json \
-            --release-tag "$RELEASE_TAG"
+            --sources-lock sources.lock.json \
+            --dependencies-lock dependencies.lock.json \
+            --release-lock release.lock.json
 
-      - name: Tag verified commit and publish prerelease
+      - name: Tag verified commit and publish r2
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -224,6 +260,5 @@ jobs:
           else
             gh release create "$RELEASE_TAG" dist/* \
               --verify-tag \
-              --generate-notes \
-              --prerelease
+              --generate-notes
           fi

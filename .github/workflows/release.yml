@@ -1,9 +1,7 @@
-name: Publish UserLAnd apps release
+name: Manually rebuild UserLAnd r2 APKs
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -29,11 +27,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java 17 for Android SDK tools
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -58,7 +57,7 @@ jobs:
           path: |
             build/shared
             .cache/dependencies
-          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/verify_dependency_tree.py') }}
+          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/stage_support_assets.py', 'tools/verify_dependency_tree.py') }}
 
       - name: Prepare locked shared dependencies
         if: steps.dependency-cache.outputs.cache-hit != 'true'
@@ -68,13 +67,6 @@ jobs:
         if: steps.dependency-cache.outputs.cache-hit == 'true'
         run: python3 tools/verify_dependency_tree.py build/shared
 
-      - name: Set up Gradle Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.app == 'foxbox' && '11' || '17' }}
-          cache: gradle
-
       - name: Verify signing material
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -83,75 +75,48 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: scripts/prepare_signing.sh
 
-      - name: Build signed release APK
+      - name: Build signed r2 APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: scripts/build_app.sh "${{ matrix.app }}"
+
+      - name: Read expected package and r2 metadata
+        id: meta
+        shell: bash
+        run: |
+          python3 - "${{ matrix.app }}" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          apps = json.load(open("sources.lock.json", encoding="utf-8"))["apps"]
+          app = next(item for item in apps if item["id"] == sys.argv[1])
+          release = json.load(open("release.lock.json", encoding="utf-8"))
+          with open(sys.argv[2], "a", encoding="utf-8") as output:
+              output.write(f"package={app['package_id']}\n")
+              output.write(f"apk={app['output_name']}\n")
+              output.write(f"version_code={release['version_code']}\n")
+              output.write(f"version_name={release['version_name']}\n")
+          PY
+
+      - name: Verify exact r2 APK metadata and certificate
         shell: bash
         run: |
           set -euo pipefail
-          version_code=$((2000000000 + GITHUB_RUN_ID / 10000))
-          if (( version_code > 2100000000 )); then
-            echo 'GitHub run number exceeds Android version-code range' >&2
-            exit 1
-          fi
-          scripts/build_app.sh \
-            "${{ matrix.app }}" \
-            "$version_code" \
-            "$GITHUB_REF_NAME"
+          apk="dist/${{ steps.meta.outputs.apk }}"
+          badging=$(aapt dump badging "$apk")
+          grep -F "package: name='${{ steps.meta.outputs.package }}' versionCode='${{ steps.meta.outputs.version_code }}' versionName='${{ steps.meta.outputs.version_name }}'" <<< "$badging"
+          certificate=$(apksigner verify --verbose --print-certs "$apk" |
+            sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
+          expected=$(tr -d ':' <<< '82:9A:55:6F:C5:8A:D5:24:9B:5D:4C:4A:7F:CB:9A:96:9C:FF:38:26:AA:5C:7E:41:02:C3:13:B2:20:A4:5F:EC' |
+            tr '[:upper:]' '[:lower:]')
+          test "$certificate" = "$expected"
 
-      - name: Verify release APK
-        shell: bash
-        run: |
-          set -euo pipefail
-          apk=$(find dist -maxdepth 1 -type f -name '*.apk' -print)
-          test -n "$apk"
-          apksigner verify --verbose --print-certs "$apk"
-          aapt dump badging "$apk" | head -1
-
-      - name: Upload signed APK
+      - name: Upload signed r2 APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-signed-apk
-          path: dist/*.apk
+          name: ${{ matrix.app }}-signed-r2-apk
+          path: dist/${{ steps.meta.outputs.apk }}
           if-no-files-found: error
           retention-days: 14
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install APK inspection tools
-        run: |
-          sdkmanager 'build-tools;35.0.0'
-          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
-
-      - name: Download all signed APKs
-        uses: actions/download-artifact@v4
-        with:
-          pattern: '*-signed-apk'
-          path: dist
-          merge-multiple: true
-
-      - name: Generate and verify release metadata
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(find dist -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 10
-          python3 tools/release_manifest.py \
-            --dist dist \
-            --lock sources.lock.json \
-            --release-tag "$GITHUB_REF_NAME"
-
-      - name: Publish GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes

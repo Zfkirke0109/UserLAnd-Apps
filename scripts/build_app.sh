@@ -1,17 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-  echo "usage: $0 APP_ID VERSION_CODE VERSION_NAME" >&2
+if [[ $# -ne 1 && $# -ne 3 ]]; then
+  echo "usage: $0 APP_ID [VERSION_CODE VERSION_NAME]" >&2
   exit 2
 fi
 
 APP_ID=$1
-VERSION_CODE=$2
-VERSION_NAME=$3
 REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 SHARED_ROOT=${ULA_SHARED_ROOT:-$REPOSITORY_ROOT/build/shared}
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set}"
+
+read_release() {
+  python3 - "$REPOSITORY_ROOT/release.lock.json" "$1" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    print(json.load(source)[sys.argv[2]])
+PY
+}
+
+if [[ $# -eq 1 ]]; then
+  VERSION_CODE=$(read_release version_code)
+  VERSION_NAME=$(read_release version_name)
+else
+  VERSION_CODE=$2
+  VERSION_NAME=$3
+fi
 
 if [[ ! $VERSION_CODE =~ ^[0-9]+$ ]] || \
    (( VERSION_CODE < 2000000000 || VERSION_CODE > 2100000000 )); then

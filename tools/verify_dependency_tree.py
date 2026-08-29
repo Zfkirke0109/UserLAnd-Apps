@@ -18,6 +18,14 @@ REQUIRED_FILES = (
     "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/src/main/jniLibs.DISABLED/armeabi-v7a/libwinpr.so",
 )
 
+SUPPORT_ABIS = ("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+SUPPORT_FILES = (
+    "lib_arch.so",
+    "lib_assets.txt.so",
+    "lib_busybox.so",
+    "lib_proot.so",
+)
+
 
 def verify_dependency_tree(root: Path) -> list[str]:
     errors = []
@@ -25,6 +33,18 @@ def verify_dependency_tree(root: Path) -> list[str]:
         path = root / relative
         if not path.is_file() or path.stat().st_size == 0:
             errors.append(f"missing or empty: {relative}")
+    for abi in SUPPORT_ABIS:
+        for filename in SUPPORT_FILES:
+            relative = f"UserLAndLibrary/app/src/main/jniLibs/{abi}/{filename}"
+            path = root / relative
+            if not path.is_file() or path.stat().st_size == 0:
+                errors.append(f"missing or empty support asset for {abi}: {relative}")
+        marker_relative = f"UserLAndLibrary/app/src/main/.support-assets/{abi}.json"
+        marker = root / marker_relative
+        if not marker.is_file() or '"release": "v1.5.1"' not in marker.read_text(
+            encoding="utf-8"
+        ):
+            errors.append(f"missing or invalid support marker for {abi}: {marker_relative}")
     return errors
 
 

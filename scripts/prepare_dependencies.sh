@@ -41,6 +41,50 @@ validate_archive() {
     tar -tzf "$archive_path" >/dev/null
 }
 
+validate_support_archive() {
+  local archive_path=$1
+  local expected_sha256=$2
+  test -s "$archive_path" &&
+    printf '%s  %s\n' "$expected_sha256" "$archive_path" |
+      sha256sum --check --status &&
+    unzip -tqq "$archive_path" >/dev/null
+}
+
+download_support_archive() {
+  local url=$1
+  local expected_sha256=$2
+  local filename=$3
+  local archive_path="$CACHE_DIR/${expected_sha256}-${filename}"
+  local part_archive="${archive_path}.part"
+  if ! validate_support_archive "$archive_path" "$expected_sha256"; then
+    rm -f "$archive_path" "$part_archive"
+    for attempt in 1 2 3 4 5; do
+      rm -f "$part_archive"
+      if curl \
+        --fail \
+        --location \
+        --show-error \
+        --connect-timeout 20 \
+        --max-time 300 \
+        --output "$part_archive" \
+        "$url" && validate_support_archive "$part_archive" "$expected_sha256"
+      then
+        mv "$part_archive" "$archive_path"
+        break
+      fi
+      if [[ $attempt -eq 5 ]]; then
+        echo "support asset download failed validation after $attempt attempts: $filename" >&2
+        exit 1
+      fi
+      delay=$((2 ** (attempt - 1)))
+      echo "support asset download attempt $attempt failed; retrying in ${delay}s" >&2
+      sleep "$delay"
+    done
+  fi
+  validate_support_archive "$archive_path" "$expected_sha256"
+  printf '%s\n' "$archive_path"
+}
+
 if [[ -e "$OUTPUT_DIR" ]] && [[ -n "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
   echo "output directory must be empty: $OUTPUT_DIR" >&2
   exit 1
@@ -57,6 +101,7 @@ FREERDP_REPOSITORY=$(read_lock freerdp repository)
 FREERDP_REF=$(read_lock freerdp ref)
 NATIVE_URL=$(read_lock native_archive url)
 NATIVE_SHA256=$(read_lock native_archive sha256)
+SUPPORT_RELEASE=$(read_lock support_assets release)
 
 USERLAND_DIR="$OUTPUT_DIR/UserLAndLibrary"
 CLIENTS_DIR="$USERLAND_DIR/remote-desktop-clients"
@@ -111,5 +156,30 @@ rsync -a "$CLIENTS_DIR/FreeRDP/" "$FREERDP_DESTINATION/"
 
 clone_locked "$FREERDP_REPOSITORY" "$FREERDP_REF" "$FREERDP_SOURCE"
 rsync -a --exclude='.git' "$FREERDP_SOURCE/" "$FREERDP_DESTINATION/"
+
+while IFS=$'\t' read -r SUPPORT_ABI SUPPORT_FILENAME SUPPORT_URL SUPPORT_SHA256; do
+  SUPPORT_ARCHIVE=$(download_support_archive \
+    "$SUPPORT_URL" "$SUPPORT_SHA256" "$SUPPORT_FILENAME")
+  python3 "$REPOSITORY_ROOT/tools/stage_support_assets.py" \
+    --archive "$SUPPORT_ARCHIVE" \
+    --destination "$USERLAND_DIR/app/src/main/jniLibs" \
+    --abi "$SUPPORT_ABI" \
+    --release "$SUPPORT_RELEASE"
+done < <(python3 - "$LOCK_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as source:
+    archives = json.load(source)["support_assets"]["archives"]
+for archive in archives:
+    print(
+        archive["abi"],
+        archive["filename"],
+        archive["url"],
+        archive["sha256"],
+        sep="\t",
+    )
+PY
+)
 
 python3 "$REPOSITORY_ROOT/tools/verify_dependency_tree.py" "$OUTPUT_DIR"
