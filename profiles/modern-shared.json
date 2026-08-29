@@ -26,6 +26,13 @@
       "type": "insert_after",
       "path": "UserLAndLibrary/app/build.gradle",
       "anchor": "android {\n",
+      "text": "    buildFeatures {\n        buildConfig true\n    }\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "anchor": "android {\n",
       "text": "    namespace 'tech.ula.library'\n",
       "count": 1
     },

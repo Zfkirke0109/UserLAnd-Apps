@@ -49,6 +49,13 @@ class CompatibilityTests(unittest.TestCase):
                 for operation in modern["operations"]
             )
         )
+        self.assertTrue(
+            any(
+                operation.get("path") == "UserLAndLibrary/app/build.gradle"
+                and "buildConfig true" in operation.get("text", "")
+                for operation in modern["operations"]
+            )
+        )
 
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
