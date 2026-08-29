@@ -11,7 +11,7 @@ Create one public, reproducible repository that builds independently installable
 
 | App | Package ID | Initial source |
 | --- | --- | --- |
-| FoxBox | Read and lock from the reproducible FoxBox source during import | `Zfkirke0109/FoxBox` |
+| FoxBox | `tech.ula.foxbox_pro` | `Zfkirke0109/FoxBox@72874faf7a7666dfbd782b22b1900b1ed26c8707` |
 | Andacious | `tech.ula.andacious` | `Zfkirke0109/Andacious@ecf655a09672b6f32a77e21db69d16b0973f59c4` |
 | Gnuplot | `tech.ula.gnuplot` | `Zfkirke0109/Gnuplot@f08f9de7dcb6807f26fb7a3f7d30aa3e483458c1` |
 | R | `tech.ula.r` | `Zfkirke0109/R@7c6c4c92cca9fba35cd9d04af84a5b94e1f95153` |
@@ -42,7 +42,7 @@ A single compatibility layer prepares dependencies for every app:
 4. Make FreeRDP version discovery safe outside its original Git history.
 5. Replace retired JCenter/Bintray dependencies and publishing plugins only when detected.
 6. Provide the legacy Gradle/Android properties required by the selected source.
-7. define and validate `android:exported` for all components with intent filters.
+7. Define and validate `android:exported` for all components with intent filters.
 8. Apply app-specific patches from isolated profile files; a patch for one app must not affect another.
 
 The compatibility scripts are fail-closed: missing expected anchors, changed checksums, incomplete dependency trees, unexpected package IDs, or unsigned outputs fail the job.
