@@ -41,6 +41,16 @@ class EmulatorContractTests(unittest.TestCase):
         ):
             self.assertIn(required, text)
 
+    def test_missing_pid_reaches_the_explicit_runtime_failure(self):
+        text = Path("scripts/emulator_smoke.sh").read_text()
+
+        self.assertIn("read_package_pid() {", text)
+        self.assertIn("resumed_pid=$(read_package_pid)", text)
+        self.assertIn(
+            '[[ -n $resumed_pid ]] || fail "process missing after All Files Access return"',
+            text,
+        )
+
     def test_smoke_script_verifies_r2_metadata_certificate_and_permissions(self):
         text = Path("scripts/emulator_smoke.sh").read_text()
 

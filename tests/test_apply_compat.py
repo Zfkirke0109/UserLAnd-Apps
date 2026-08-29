@@ -227,6 +227,43 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_r2_session_selection_falls_back_to_room_when_livedata_is_stale(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        operations = profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/model/daos/FilesystemDao.kt"
+                and "getFilesystemById" in operation.get("text", "")
+                and "Filesystem?" in operation.get("text", "")
+                for operation in operations
+            )
+        )
+        session_fix = next(
+            operation
+            for operation in operations
+            if operation.get("path")
+            == "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt"
+            and "findFilesystemForSession" in operation.get("old", "")
+        )
+        replacement = session_fix.get("new", "")
+        self.assertIn("filesystems.find", replacement)
+        self.assertIn("filesystemDao.getFilesystemById", replacement)
+        self.assertIn("withContext(Dispatchers.IO)", replacement)
+        self.assertIn("SessionFilesystemUnavailable", replacement)
+        self.assertNotIn("!!", replacement)
+        self.assertTrue(
+            any(
+                operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt"
+                and "SessionFilesystemUnavailable" in operation.get("text", "")
+                and "NoSessionSelectedWhenTransitionNecessary"
+                in operation.get("text", "")
+                for operation in operations
+            )
+        )
+
     def test_r2_launcher_feature_permissions_are_minimized(self):
         andacious = Path("apps/andacious/app/src/main/AndroidManifest.xml").read_text()
         self.assertNotIn(

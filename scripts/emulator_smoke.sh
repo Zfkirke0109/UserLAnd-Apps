@@ -46,6 +46,10 @@ read_version_name() {
   sed -n 's/.*versionName=\([^[:space:]]*\).*/\1/p' | head -1
 }
 
+read_package_pid() {
+  adb shell pidof -s "$PACKAGE_ID" 2>/dev/null | tr -d '\r' || true
+}
+
 assert_no_app_crash() {
   adb logcat -b crash -d > "$EVIDENCE_DIR/crash-current.txt"
   adb logcat -d > "$EVIDENCE_DIR/logcat-current.txt"
@@ -64,7 +68,7 @@ wait_for_userland_activity() {
     if grep -Eq \
       "$PACKAGE_ID/tech\.ula\.library\.MainActivity|tech\.ula\.library/\.MainActivity" \
       "$EVIDENCE_DIR/activity-current.txt" &&
-       [[ -n "$(adb shell pidof -s "$PACKAGE_ID" | tr -d '\r')" ]]
+       [[ -n "$(read_package_pid)" ]]
     then
       return 0
     fi
@@ -78,7 +82,7 @@ assert_stable_process() {
   local expected_pid=$1
   : > "$EVIDENCE_DIR/pid-stability.txt"
   for stable_second in $(seq 1 20); do
-    current_pid=$(adb shell pidof -s "$PACKAGE_ID" | tr -d '\r')
+    current_pid=$(read_package_pid)
     printf '%s %s\n' "$stable_second" "$current_pid" \
       >> "$EVIDENCE_DIR/pid-stability.txt"
     if [[ -z $current_pid || $current_pid != "$expected_pid" ]]; then
@@ -241,7 +245,7 @@ adb shell am force-stop "$PACKAGE_ID"
 adb logcat -c
 adb shell am start -W -n "$launcher" > "$EVIDENCE_DIR/launch-result.txt"
 wait_for_userland_activity
-pid=$(adb shell pidof -s "$PACKAGE_ID" | tr -d '\r')
+pid=$(read_package_pid)
 [[ -n $pid ]] || fail "package PID missing after cold launch"
 assert_stable_process "$pid"
 assert_visible_app_ui
@@ -265,7 +269,7 @@ wait_for_all_files_settings
 adb shell appops set --uid "$PACKAGE_ID" MANAGE_EXTERNAL_STORAGE allow
 adb shell input keyevent 4
 wait_for_userland_activity
-resumed_pid=$(adb shell pidof -s "$PACKAGE_ID" | tr -d '\r')
+resumed_pid=$(read_package_pid)
 [[ -n $resumed_pid ]] || fail "process missing after All Files Access return"
 assert_no_app_crash
 sleep 2
