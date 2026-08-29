@@ -4,8 +4,10 @@ import io
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
+import tools.payload_lock as payload_tool
 from tools.payload_lock import (
     PAYLOAD_SOURCES,
     aggregate_records,
@@ -317,6 +319,19 @@ class PayloadLockTests(unittest.TestCase):
             aggregate_records(sources, records[:-1])
         with self.assertRaisesRegex(ValueError, "duplicate record"):
             aggregate_records(sources, [*records, records[0]])
+
+    def test_release_metadata_requests_github_json_media_type(self):
+        source = PAYLOAD_SOURCES["foxbox"]
+        response = io.BytesIO(
+            json.dumps({"tag_name": source["release"], "assets": []}).encode()
+        )
+        with patch(
+            "tools.payload_lock.urllib.request.urlopen", return_value=response
+        ) as urlopen:
+            payload_tool._fetch_release(source)
+
+        request = urlopen.call_args.args[0]
+        self.assertEqual("application/vnd.github+json", request.get_header("Accept"))
 
 
 if __name__ == "__main__":

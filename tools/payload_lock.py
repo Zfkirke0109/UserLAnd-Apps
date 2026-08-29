@@ -402,9 +402,9 @@ def aggregate_records(sources: dict, records: list[dict]) -> dict:
     }
 
 
-def _github_open(url: str):
+def _github_open(url: str, accept: str = "application/octet-stream"):
     headers = {
-        "Accept": "application/octet-stream",
+        "Accept": accept,
         "User-Agent": "UserLAnd-Apps-payload-lock/1",
     }
     token = os.environ.get("GITHUB_TOKEN")
@@ -420,7 +420,7 @@ def _fetch_release(source: dict) -> dict:
         f"https://api.github.com/repos/{source['repository']}/releases/tags/"
         f"{source['release']}"
     )
-    with _github_open(url) as response:
+    with _github_open(url, accept="application/vnd.github+json") as response:
         return json.load(response)
 
 
