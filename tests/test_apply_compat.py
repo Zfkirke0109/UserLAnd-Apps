@@ -92,6 +92,61 @@ class CompatibilityTests(unittest.TestCase):
         self.assertTrue(has_moshi_upgrade(modern))
         self.assertFalse(has_moshi_upgrade(legacy))
 
+    def test_modern_profiles_bridge_androidx_and_kotlin_api_changes(self):
+        modern = load_profile(Path("profiles/andacious.json"))
+        legacy = load_profile(Path("profiles/foxbox.json"))
+
+        def changes(profile):
+            return profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("path") == "gradle.properties"
+                and "android.nonTransitiveRClass=false"
+                in operation.get("text", "")
+                for operation in changes(modern)
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt"
+                and "graph.setStartDestination" in operation.get("new", "")
+                for operation in changes(modern)
+            )
+        )
+        factory_paths = {
+            operation.get("path")
+            for operation in changes(modern)
+            if operation.get("old")
+            == "override fun <T : ViewModel?> create(modelClass: Class<T>): T"
+            and operation.get("new")
+            == "override fun <T : ViewModel> create(modelClass: Class<T>): T"
+        }
+        self.assertEqual(
+            {
+                "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/AppDetailsViewModel.kt",
+                "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/FilesystemEditViewModel.kt",
+                "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/FilesystemListViewModel.kt",
+                "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+                "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/SessionEditViewModel.kt",
+            },
+            factory_paths,
+        )
+        self.assertEqual(
+            2,
+            sum(
+                "else -> Unit" in operation.get("text", "")
+                for operation in changes(modern)
+            ),
+        )
+        self.assertFalse(
+            any(
+                "android.nonTransitiveRClass=false" in operation.get("text", "")
+                for operation in changes(legacy)
+            )
+        )
+
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
