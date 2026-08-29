@@ -6,24 +6,24 @@ This repository reproducibly builds ten independently installable Android launch
 
 ## App status
 
-No app is marked complete until its signed matrix build and install/launch/upgrade emulator test both pass.
+All ten apps passed [signed build run 10](https://github.com/Zfkirke0109/UserLAnd-Apps/actions/runs/33246115510) and [install/launch/upgrade run 3](https://github.com/Zfkirke0109/UserLAnd-Apps/actions/runs/33246115552) on 2026-08-29. The release assets come from the exact APK artifacts that passed the emulator run.
 
-| App | Android package | APK | Verification status |
-| --- | --- | --- | --- |
-| FoxBox | `tech.ula.foxbox_pro` | `FoxBox.apk` | Pending first monorepo CI and upgrade-smoke run |
-| Andacious | `tech.ula.andacious` | `Andacious.apk` | Pending first monorepo CI and upgrade-smoke run |
-| Gnuplot | `tech.ula.gnuplot` | `Gnuplot.apk` | Pending first monorepo CI and upgrade-smoke run |
-| R | `tech.ula.r` | `R.apk` | Pending first monorepo CI and upgrade-smoke run |
-| LibreDocs | `tech.ula.libredocs` | `LibreDocs.apk` | Pending first monorepo CI and upgrade-smoke run |
-| deVStudio | `tech.ula.devstudio` | `deVStudio.apk` | Pending first monorepo CI and upgrade-smoke run |
-| Inkscape | `tech.ula.inkscape` | `Inkscape.apk` | Pending first monorepo CI and upgrade-smoke run |
-| BirdBox | `tech.ula.birdbox` | `BirdBox.apk` | Pending first monorepo CI and upgrade-smoke run |
-| GIMP | `tech.ula.gimp` | `GIMP.apk` | Pending first monorepo CI and upgrade-smoke run |
-| IDLE | `tech.ula.idle` | `IDLE.apk` | Pending first monorepo CI and upgrade-smoke run |
+| App | Android package | APK | Obtainium APK filter | Verification status |
+| --- | --- | --- | --- | --- |
+| FoxBox | `tech.ula.foxbox_pro` | `FoxBox.apk` | `^FoxBox\.apk$` | Verified |
+| Andacious | `tech.ula.andacious` | `Andacious.apk` | `^Andacious\.apk$` | Verified |
+| Gnuplot | `tech.ula.gnuplot` | `Gnuplot.apk` | `^Gnuplot\.apk$` | Verified |
+| R | `tech.ula.r` | `R.apk` | `^R\.apk$` | Verified |
+| LibreDocs | `tech.ula.libredocs` | `LibreDocs.apk` | `^LibreDocs\.apk$` | Verified |
+| deVStudio | `tech.ula.devstudio` | `deVStudio.apk` | `^deVStudio\.apk$` | Verified |
+| Inkscape | `tech.ula.inkscape` | `Inkscape.apk` | `^Inkscape\.apk$` | Verified |
+| BirdBox | `tech.ula.birdbox` | `BirdBox.apk` | `^BirdBox\.apk$` | Verified |
+| GIMP | `tech.ula.gimp` | `GIMP.apk` | `^GIMP\.apk$` | Verified |
+| IDLE | `tech.ula.idle` | `IDLE.apk` | `^IDLE\.apk$` | Verified |
 
 ## Install and update
 
-Signed APKs will be attached to the [latest GitHub Release](https://github.com/Zfkirke0109/UserLAnd-Apps/releases/latest). The release also contains `SHA256SUMS` and `release-manifest.json` for independent package, version, source, and certificate verification.
+Signed APKs are attached to the verified [`v2026.08.29-rc1` GitHub prerelease](https://github.com/Zfkirke0109/UserLAnd-Apps/releases/tag/v2026.08.29-rc1). The release also contains `SHA256SUMS` and `release-manifest.json` for independent package, version, source, and certificate verification.
 
 For update notifications and installation, add this repository URL to [Obtainium](https://github.com/ImranR98/Obtainium):
 
@@ -31,7 +31,7 @@ For update notifications and installation, add this repository URL to [Obtainium
 https://github.com/Zfkirke0109/UserLAnd-Apps
 ```
 
-Select the APK matching the installed app. GitHub Releases is the update feed; the APKs do not contain a custom in-app updater.
+Add the repository once per app, enable Obtainium's **Include prereleases** setting for this `rc1`, and use the exact APK filter from the table above so each entry tracks only its own package. GitHub Releases is the update feed; the APKs do not contain a custom in-app updater. Future non-prerelease tags are detected without the prerelease setting.
 
 ### One-time signing migration
 
