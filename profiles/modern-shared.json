@@ -80,6 +80,13 @@
     {
       "type": "replace",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        registerReceiver(\n            downloadBroadcastReceiver,\n            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)\n        )",
+      "new": "        ContextCompat.registerReceiver(\n            this,\n            downloadBroadcastReceiver,\n            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),\n            ContextCompat.RECEIVER_EXPORTED\n        )",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
       "old": "        startService(serviceIntent)\n        if (autoStarted) {",
       "new": "        ContextCompat.startForegroundService(this, serviceIntent)\n        if (autoStarted) {",
       "count": 1
