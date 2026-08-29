@@ -112,6 +112,74 @@
       "count": 1
     },
     {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+      "source": "compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+      "sha256": "226fe5e119b7d53936a3553512049a1813ba34275eebae09a0ff42ff043928da"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+      "sha256": "ee47a0e46a0bc2291948f7b135ac72b04125d57a0d120a02740a54013bf07184"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+      "sha256": "24eb75e618f669eab4d04c2e4c860df1da8ac291c3f1518ab09251cfade46b04"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+      "sha256": "2696eae886650eee249affb583f27c79c4a699a137e1db59371155497b56cb37"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/AssetDownloadService.kt",
+      "source": "compat/r3/java/tech/ula/library/AssetDownloadService.kt",
+      "sha256": "fc5398e2d7da187f9a91dbb034b476dea98212c7a89d261d7e03e31f65844700"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/model/repositories/R3LockedPayloadCatalogTest.kt",
+      "source": "compat/r3/test/tech/ula/library/model/repositories/R3LockedPayloadCatalogTest.kt",
+      "sha256": "45508e6cf56eff426fb987be7371fb8c123144b3d2dd930d3cabe4ef7af84598"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
+      "sha256": "bd8372bf5d5d7dba48ea94c563dc5eb0250cf972785c938bf4036e2ebfa3afe3"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
+      "sha256": "06b00b9202671e998a9e6e04246451710800651c41ed1c38d1131d365b8e666c"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
+      "sha256": "dfd33c5e0b404129545907ffc59630d161fdcf2e77dcf42395ab9e93e9e15fa8"
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n",
+      "text": "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_DATA_SYNC\" />\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "        <service\n            android:name=\".ServerService\"\n            android:foregroundServiceType=\"specialUse\"\n            android:stopWithTask=\"true\">\n            <property\n                android:name=\"android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE\"\n                android:value=\"User-started Linux, SSH, and VNC session runtime\" />\n        </service>",
+      "text": "\n\n        <service\n            android:name=\".AssetDownloadService\"\n            android:exported=\"false\"\n            android:foregroundServiceType=\"dataSync\" />",
+      "count": 1
+    },
+    {
       "type": "replace",
       "path": "app/src/main/AndroidManifest.xml",
       "old": "    <uses-permission android:name=\"android.permission.MANAGE_EXTERNAL_STORAGE\" tools:node=\"remove\"/>\n",
