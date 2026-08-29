@@ -96,6 +96,13 @@
       "type": "assert_absent",
       "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
       "pattern": "com\\.jfrog\\.bintray|android-maven|bintray-publish"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "    androidTestImplementation('com.schibsted.spain:barista:3.1.0') {\n        exclude group: 'com.android.support'\n        exclude group: 'org.jetbrains.kotlin'\n    }\n",
+      "new": "",
+      "count": 1
     }
   ]
 }

@@ -23,6 +23,33 @@ class CompatibilityTests(unittest.TestCase):
         self.assertTrue(has_bvnc_namespace(modern))
         self.assertFalse(has_bvnc_namespace(legacy))
 
+    def test_profiles_remove_retired_test_dependency_and_preserve_synthetics(self):
+        modern = load_profile(Path("profiles/andacious.json"))
+        legacy = load_profile(Path("profiles/foxbox.json"))
+
+        self.assertTrue(
+            any(
+                "barista:3.1.0" in operation.get("old", "")
+                and operation.get("new") == ""
+                for operation in legacy["operations"]
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("path") == "build.gradle"
+                and operation.get("old") == "kotlin_version = '1.9.20'"
+                and operation.get("new") == "kotlin_version = '1.7.20'"
+                for operation in modern["operations"]
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("old") == "xml.enabled = true"
+                and operation.get("new") == "xml.required = true"
+                for operation in modern["operations"]
+            )
+        )
+
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

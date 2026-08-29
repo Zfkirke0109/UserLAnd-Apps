@@ -2,6 +2,27 @@
   "extends": "shared.json",
   "operations": [
     {
+      "type": "replace",
+      "path": "build.gradle",
+      "old": "kotlin_version = '1.9.20'",
+      "new": "kotlin_version = '1.7.20'",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "xml.enabled = true",
+      "new": "xml.required = true",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "html.enabled = true",
+      "new": "html.required = true",
+      "count": 2
+    },
+    {
       "type": "insert_after",
       "path": "UserLAndLibrary/app/build.gradle",
       "anchor": "android {\n",
