@@ -1,0 +1,13 @@
+{
+  "extends": "modern-shared.json",
+  "operations": [
+    {
+      "type": "insert_after",
+      "path": "build.gradle",
+      "anchor": "        appVersionName = '24.11.27'\n",
+      "text": "        compileApi = 35\n        targetApi = 35\n        minApi = 21\n        toolsVersion = '30.0.3'\n        versionCode = appVersionCode\n        versionName = appVersionName\n",
+      "count": 1
+    },
+    {"type": "assert_absent", "path": "build.gradle", "text": "jcenter()"}
+  ]
+}

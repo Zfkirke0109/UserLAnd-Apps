@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T07:59:22.898583+00:00",
+  "repository": "Zfkirke0109/Andacious",
+  "source_ref": "ecf655a09672b6f32a77e21db69d16b0973f59c4"
+}

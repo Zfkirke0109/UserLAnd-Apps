@@ -1,0 +1,166 @@
+{
+  "extends": "shared.json",
+  "operations": [
+    {
+      "type": "replace",
+      "path": "build.gradle",
+      "old": "kotlin_version = '1.9.20'",
+      "new": "kotlin_version = '1.7.20'",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "xml.enabled = true",
+      "new": "xml.required = true",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "html.enabled = true",
+      "new": "html.required = true",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "def moshi_version = '1.12.0'",
+      "new": "def moshi_version = '1.14.0'",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "gradle.properties",
+      "anchor": "android.useAndroidX=true\n",
+      "text": "android.nonTransitiveRClass=false\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        graph.startDestination = when (userPreference) {\n            getString(R.string.sessions) -> R.id.session_list_fragment\n            else -> R.id.app_list_fragment\n        }\n",
+      "new": "        graph.setStartDestination(when (userPreference) {\n            getString(R.string.sessions) -> R.id.session_list_fragment\n            else -> R.id.app_list_fragment\n        })\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/AppDetailsViewModel.kt",
+      "old": "override fun <T : ViewModel?> create(modelClass: Class<T>): T",
+      "new": "override fun <T : ViewModel> create(modelClass: Class<T>): T",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/FilesystemEditViewModel.kt",
+      "old": "override fun <T : ViewModel?> create(modelClass: Class<T>): T",
+      "new": "override fun <T : ViewModel> create(modelClass: Class<T>): T",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/FilesystemListViewModel.kt",
+      "old": "override fun <T : ViewModel?> create(modelClass: Class<T>): T",
+      "new": "override fun <T : ViewModel> create(modelClass: Class<T>): T",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "old": "override fun <T : ViewModel?> create(modelClass: Class<T>): T",
+      "new": "override fun <T : ViewModel> create(modelClass: Class<T>): T",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/SessionEditViewModel.kt",
+      "old": "override fun <T : ViewModel?> create(modelClass: Class<T>): T",
+      "new": "override fun <T : ViewModel> create(modelClass: Class<T>): T",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/ui/FilesystemEditFragment.kt",
+      "anchor": "                is ImportFailure -> dialogBuilder.setMessage(R.string.import_failure).create().show()\n",
+      "text": "                else -> Unit\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "anchor": "                is AppDatabaseEntriesSynced -> {\n                    lastSelectedApp = update.app\n                    lastSelectedSession = update.session\n                    lastSelectedFilesystem = update.filesystem\n                }\n",
+      "text": "                else -> Unit\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "anchor": "android {\n",
+      "text": "    buildFeatures {\n        buildConfig true\n    }\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "CustomLibrary/build.gradle",
+      "anchor": "    defaultConfig {\n",
+      "text": "        buildConfigField 'boolean', 'DEFAULT_PREF_CUSTOM_SCALING_ENABLED', 'true'\n        resValue \"string\", \"default_pref_custom_scaling_enabled\", \"true\"\n        buildConfigField 'String', 'DEFAULT_PREF_SCALING', \"\\\"1.0\\\"\"\n        resValue \"string\", \"default_pref_scaling\", \"1.0\"\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'tech.ula.library'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/app/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux.view'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/terminal-emulator/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux.terminal'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/bVNC/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.undatech.remoteClientUi'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/pubkeyGenerator/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.iiordanov.pubkeygenerator'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.undatech.remoteClientLib'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.freerdp.freerdpcore'\n",
+      "count": 1
+    }
+  ]
+}

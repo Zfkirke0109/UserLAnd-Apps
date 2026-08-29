@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T07:59:42.811706+00:00",
+  "repository": "Zfkirke0109/R",
+  "source_ref": "7c6c4c92cca9fba35cd9d04af84a5b94e1f95153"
+}

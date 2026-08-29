@@ -1,0 +1,211 @@
+name: Install launch and upgrade smoke tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - foxbox
+          - andacious
+          - gnuplot
+          - r
+          - libredocs
+          - devstudio
+          - inkscape
+          - birdbox
+          - gimp
+          - idle
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17 for Android SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platforms and build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager \
+            'platform-tools' \
+            'platforms;android-31' \
+            'platforms;android-35' \
+            'build-tools;30.0.3' \
+            'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Restore shared dependency cache
+        id: dependency-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/shared
+            .cache/dependencies
+          key: ${{ runner.os }}-userland-dependencies-${{ hashFiles('dependencies.lock.json', 'scripts/prepare_dependencies.sh', 'tools/verify_dependency_tree.py') }}
+
+      - name: Prepare locked shared dependencies
+        if: steps.dependency-cache.outputs.cache-hit != 'true'
+        run: scripts/prepare_dependencies.sh dependencies.lock.json build/shared .cache/dependencies
+
+      - name: Verify cached shared dependencies
+        if: steps.dependency-cache.outputs.cache-hit == 'true'
+        run: python3 tools/verify_dependency_tree.py build/shared
+
+      - name: Set up Gradle Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.app == 'foxbox' && '11' || '17' }}
+          cache: gradle
+
+      - name: Verify signing material
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: scripts/prepare_signing.sh
+
+      - name: Read app metadata and version pair
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "${{ matrix.app }}" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          apps = json.load(open("sources.lock.json", encoding="utf-8"))["apps"]
+          app = next(item for item in apps if item["id"] == sys.argv[1])
+          with open(sys.argv[2], "a", encoding="utf-8") as output:
+              output.write(f"package={app['package_id']}\n")
+              output.write(f"apk={app['output_name']}\n")
+          PY
+          new_code=$((2000000000 + GITHUB_RUN_ID / 10000))
+          old_code=$((new_code - 1))
+          test "$new_code" -le 2100000000
+          printf 'old_code=%s\n' "$old_code" >> "$GITHUB_OUTPUT"
+          printf 'new_code=%s\n' "$new_code" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed upgrade pair
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          scripts/build_app.sh \
+            "${{ matrix.app }}" \
+            "${{ steps.meta.outputs.old_code }}" \
+            "smoke.${GITHUB_RUN_NUMBER}.old"
+          cp "dist/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/old.apk"
+          scripts/build_app.sh \
+            "${{ matrix.app }}" \
+            "${{ steps.meta.outputs.new_code }}" \
+            "smoke.${GITHUB_RUN_NUMBER}.new"
+          cp "dist/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/new.apk"
+
+      - name: Run emulator install launch and upgrade check
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}"
+
+      - name: Upload emulator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-upgrade-evidence
+          path: evidence/${{ matrix.app }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload verified signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-verified-apk
+          path: dist/${{ steps.meta.outputs.apk }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: >-
+      github.event_name == 'push' &&
+      startsWith(github.event.head_commit.message, 'Build and release all UserLAnd launcher APKs')
+    needs: upgrade-smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: v2026.08.29-rc1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install APK inspection tools
+        run: |
+          sdkmanager 'build-tools;35.0.0'
+          echo "$ANDROID_SDK_ROOT/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Download all emulator-verified APKs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-verified-apk'
+          path: dist
+          merge-multiple: true
+
+      - name: Generate and verify release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find dist -maxdepth 1 -type f -name '*.apk' | wc -l)" -eq 10
+          python3 tools/release_manifest.py \
+            --dist dist \
+            --lock sources.lock.json \
+            --release-tag "$RELEASE_TAG"
+
+      - name: Tag verified commit and publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_TAG" >/dev/null; then
+            git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+            test "$(git rev-parse "$RELEASE_TAG^{commit}")" = "$GITHUB_SHA"
+          else
+            git tag "$RELEASE_TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" dist/* \
+              --verify-tag \
+              --generate-notes \
+              --prerelease
+          fi

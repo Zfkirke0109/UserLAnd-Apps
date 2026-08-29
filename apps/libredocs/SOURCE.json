@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T07:59:54.984410+00:00",
+  "repository": "Zfkirke0109/LibreDocs",
+  "source_ref": "2758a023bd99adc36419090a3d588cd42c1862db"
+}

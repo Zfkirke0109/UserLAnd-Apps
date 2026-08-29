@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "apps": [
+    {
+      "id": "foxbox",
+      "display_name": "FoxBox",
+      "package_id": "tech.ula.foxbox_pro",
+      "repository": "Zfkirke0109/FoxBox",
+      "source_ref": "72874faf7a7666dfbd782b22b1900b1ed26c8707",
+      "profile": "foxbox",
+      "output_name": "FoxBox.apk"
+    },
+    {
+      "id": "andacious",
+      "display_name": "Andacious",
+      "package_id": "tech.ula.andacious",
+      "repository": "Zfkirke0109/Andacious",
+      "source_ref": "ecf655a09672b6f32a77e21db69d16b0973f59c4",
+      "profile": "andacious",
+      "output_name": "Andacious.apk"
+    },
+    {
+      "id": "gnuplot",
+      "display_name": "Gnuplot",
+      "package_id": "tech.ula.gnuplot",
+      "repository": "Zfkirke0109/Gnuplot",
+      "source_ref": "f08f9de7dcb6807f26fb7a3f7d30aa3e483458c1",
+      "profile": "gnuplot",
+      "output_name": "Gnuplot.apk"
+    },
+    {
+      "id": "r",
+      "display_name": "R",
+      "package_id": "tech.ula.r",
+      "repository": "Zfkirke0109/R",
+      "source_ref": "7c6c4c92cca9fba35cd9d04af84a5b94e1f95153",
+      "profile": "r",
+      "output_name": "R.apk"
+    },
+    {
+      "id": "libredocs",
+      "display_name": "LibreDocs",
+      "package_id": "tech.ula.libredocs",
+      "repository": "Zfkirke0109/LibreDocs",
+      "source_ref": "2758a023bd99adc36419090a3d588cd42c1862db",
+      "profile": "libredocs",
+      "output_name": "LibreDocs.apk"
+    },
+    {
+      "id": "devstudio",
+      "display_name": "deVStudio",
+      "package_id": "tech.ula.devstudio",
+      "repository": "Zfkirke0109/deVStudio",
+      "source_ref": "7a0e5a34a1facdff58aa939433885267baaf4b96",
+      "profile": "devstudio",
+      "output_name": "deVStudio.apk"
+    },
+    {
+      "id": "inkscape",
+      "display_name": "Inkscape",
+      "package_id": "tech.ula.inkscape",
+      "repository": "Zfkirke0109/Inkscape",
+      "source_ref": "9ee89399be6089a65adac118079e2d4615d2bff6",
+      "profile": "inkscape",
+      "output_name": "Inkscape.apk"
+    },
+    {
+      "id": "birdbox",
+      "display_name": "BirdBox",
+      "package_id": "tech.ula.birdbox",
+      "repository": "Zfkirke0109/BirdBox",
+      "source_ref": "1ab3f48a4b1f691abd072a5f45471504ae1d6374",
+      "profile": "birdbox",
+      "output_name": "BirdBox.apk"
+    },
+    {
+      "id": "gimp",
+      "display_name": "GIMP",
+      "package_id": "tech.ula.gimp",
+      "repository": "Zfkirke0109/GIMP",
+      "source_ref": "a74281ee21f1eb5e460a6204cb954dbd059675df",
+      "profile": "gimp",
+      "output_name": "GIMP.apk"
+    },
+    {
+      "id": "idle",
+      "display_name": "IDLE",
+      "package_id": "tech.ula.idle",
+      "repository": "Zfkirke0109/IDLE",
+      "source_ref": "f2728037ecf1767b4e550cbc53c68d6964b9cd42",
+      "profile": "idle",
+      "output_name": "IDLE.apk"
+    }
+  ]
+}
