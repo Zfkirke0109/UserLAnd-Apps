@@ -11,6 +11,9 @@ permissions:
 
 jobs:
   upgrade-smoke:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.head_commit.message, 'Build and release all UserLAnd launcher APKs')
     runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
@@ -123,6 +126,23 @@ jobs:
             "${{ steps.meta.outputs.new_code }}" \
             "smoke.${GITHUB_RUN_NUMBER}.new"
           cp "dist/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/new.apk"
+
+      - name: Set up Java 17 for emulator tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Enable KVM acceleration
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' |
+            sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
 
       - name: Run emulator install launch and upgrade check
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808

@@ -41,8 +41,29 @@ class WorkflowContractTests(unittest.TestCase):
             "v2026.08.29-rc1",
             "gh release create",
             "--prerelease",
+            "Set up Java 17 for emulator tools",
+            "Enable KVM acceleration",
+            "github.event_name == 'workflow_dispatch'",
         ):
             self.assertIn(required, smoke)
+
+        self.assertLess(
+            smoke.index("Build signed upgrade pair"),
+            smoke.index("Set up Java 17 for emulator tools"),
+        )
+        self.assertLess(
+            smoke.index("Set up Java 17 for emulator tools"),
+            smoke.index("Enable KVM acceleration"),
+        )
+        self.assertLess(
+            smoke.index("Enable KVM acceleration"),
+            smoke.index("Run emulator install launch and upgrade check"),
+        )
+
+        release_prefix = "Build and release all UserLAnd launcher APKs"
+        self.assertEqual(2, smoke.count(release_prefix))
+        self.assertIn("MODE=\"0666\"", smoke)
+        self.assertIn("test -w /dev/kvm", smoke)
 
         for workflow in (smoke, release):
             self.assertIn("GITHUB_RUN_ID / 10000", workflow)
