@@ -264,6 +264,128 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_r3_filesystem_manager_extracts_before_it_trusts_a_success_marker(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        self.assertTrue(overlay.is_file(), "r3 filesystem manager must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            "fun validateRootfsArchive(",
+            "fun hasUsableFilesystem(",
+            'startsWith("/")',
+            'split(\'/\').any { it == ".." }',
+            'runHostApplet(\n            "tar"',
+            '"/support/common/addNonRootUser.sh"',
+            'listOf("bin/sh", "etc/passwd")',
+            'listOf("nosudo", "userland_profile.sh", "ld.so.preload")',
+            "successMarker.delete()",
+            "successMarker.createNewFile()",
+        ):
+            self.assertIn(required, text)
+
+        # The v1.5.1 helper no longer extracts, so the runtime must not delegate to it.
+        self.assertNotIn("extractFilesystem.sh", text)
+        # A failed stage must leave the download in place for Retry.
+        self.assertEqual(1, text.count("archive.delete()"))
+        # An exclusion only matches the stored member name, so both shapes are passed.
+        self.assertIn('listOf("--exclude", it, "--exclude", "./$it")', text)
+
+    def test_r3_archive_validation_rejects_unsafe_members_before_extraction(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        validation = text.split("fun validateRootfsArchive(", 1)[1]
+        validation = validation.split("\n    /**", 1)[0]
+
+        self.assertIn("members.any { it.isUnsafeArchiveMember() }", validation)
+        self.assertIn('runHostApplet(\n            "tar",\n            listOf("-tzf"', validation)
+        # The rejected member name is attacker-controlled and must not be echoed back.
+        self.assertNotIn("$it", validation.split("isUnsafeArchiveMember() }", 1)[1])
+
+        extraction = text.split("suspend fun extractFilesystem(", 1)[1]
+        extraction = extraction.split("suspend fun compressFilesystem(", 1)[0]
+        self.assertLess(
+            extraction.index("validateRootfsArchive(archive)"),
+            extraction.index('runHostApplet(\n            "tar",\n            extractionArguments'),
+        )
+
+    def test_r3_filesystem_manager_verifies_anchors_before_writing_success(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        extraction = text.split("suspend fun extractFilesystem(", 1)[1]
+        extraction = extraction.split("suspend fun compressFilesystem(", 1)[0]
+
+        verification = extraction.index("missingFilesystemAnchor(")
+        for earlier in ("runHostApplet(", "executeProotCommand("):
+            self.assertLess(extraction.index(earlier), verification, earlier)
+        self.assertLess(verification, extraction.index("successMarker.createNewFile()"))
+
+    def test_r3_usable_filesystem_requires_anchors_and_not_only_the_marker(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        body = text.split("fun hasUsableFilesystem(", 1)[1]
+        body = body.split("\n    fun ", 1)[0]
+
+        self.assertIn('$filesystemExtractionSuccess").exists()) return false', body)
+        self.assertIn("missingFilesystemAnchor(targetDirectoryName, username) == null", body)
+        # The r2 predicate returned the marker's existence and nothing else.
+        self.assertNotIn("return true", body)
+
+        delegate = text.split("fun hasFilesystemBeenSuccessfullyExtracted(", 1)[1]
+        delegate = delegate.split("\n    fun ", 1)[0]
+        self.assertIn("hasUsableFilesystem(targetDirectoryName)", delegate)
+        self.assertNotIn("exists()", delegate)
+
+    def test_r3_profile_replaces_filesystem_manager_and_copies_behavior_test(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "replace_file"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/FilesystemManager.kt"
+                and operation.get("source")
+                == "compat/r3/java/tech/ula/library/utils/FilesystemManager.kt"
+                and operation.get("old_sha256")
+                == "e6c88329469c77894f4514e8c5a56a33b270eac32cb2a58653717211d477cee8"
+                for operation in operations
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("path", "").endswith("R3FilesystemManagerTest.kt")
+                for operation in operations
+            )
+        )
+
+    def test_r3_profile_retires_the_superseded_upstream_extraction_tests(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        removals = [
+            operation for operation in profile["operations"]
+            if operation.get("type") == "replace"
+            and operation.get("path", "").endswith("FilesystemManagerTest.kt")
+        ]
+
+        self.assertEqual(2, len(removals))
+        # The v1.5.1 command contract and the marker-only success predicate are gone.
+        self.assertTrue(
+            any("/support/common/extractFilesystem.sh" in operation["old"] for operation in removals)
+        )
+        self.assertTrue(
+            any(
+                "filesystemHasOnlyBeenSuccessfullyExtractedIfSuccessStatusFileExists"
+                in operation["old"]
+                for operation in removals
+            )
+        )
+        for operation in removals:
+            self.assertEqual(1, operation.get("count"))
+            self.assertNotIn("@Test", operation["new"])
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 
