@@ -6,22 +6,26 @@ This repository reproducibly builds ten independently installable Android launch
 
 ## r2 status
 
-**Pending r2 verification.** Version `2026.08.29-r2` fixes the immediate-launch failure found in nine rc1 launchers and replaces the old launch-only smoke check with a sustained cold-launch test. The `v2026.08.29-r2` release is created only after all ten apps build, upgrade from the published rc1 APK, stay alive for the stability window, expose a usable UI, and produce permission evidence on Android 35.
+**Verified r2 release.** All ten apps passed signed build verification and one clean Android 35 emulator matrix at version `2026.08.29-r2`. Each app upgraded from its published rc1 APK, cold-launched, stayed alive for the 20-second stability window, exposed usable UI, completed the notification and All Files Access handoffs, resumed after Settings, and produced no app-scoped fatal exception, ANR, or force-finish event.
+
+- [Download v2026.08.29-r2](https://github.com/Zfkirke0109/UserLAnd-Apps/releases/tag/v2026.08.29-r2)
+- [Ten-app runtime and upgrade evidence](https://github.com/Zfkirke0109/UserLAnd-Apps/actions/runs/33255923668)
+- [Independent signed-build verification](https://github.com/Zfkirke0109/UserLAnd-Apps/actions/runs/33255923710)
 
 The rc1 APKs are retained only as upgrade-test inputs and are not recommended for normal use. Their emulator test could pass before an immediate crash occurred.
 
 | App | Android package | APK | Obtainium APK filter | r2 status |
 | --- | --- | --- | --- | --- |
-| FoxBox | `tech.ula.foxbox_pro` | `FoxBox.apk` | `^FoxBox\.apk$` | Pending r2 verification |
-| Andacious | `tech.ula.andacious` | `Andacious.apk` | `^Andacious\.apk$` | Pending r2 verification |
-| Gnuplot | `tech.ula.gnuplot` | `Gnuplot.apk` | `^Gnuplot\.apk$` | Pending r2 verification |
-| R | `tech.ula.r` | `R.apk` | `^R\.apk$` | Pending r2 verification |
-| LibreDocs | `tech.ula.libredocs` | `LibreDocs.apk` | `^LibreDocs\.apk$` | Pending r2 verification |
-| deVStudio | `tech.ula.devstudio` | `deVStudio.apk` | `^deVStudio\.apk$` | Pending r2 verification |
-| Inkscape | `tech.ula.inkscape` | `Inkscape.apk` | `^Inkscape\.apk$` | Pending r2 verification |
-| BirdBox | `tech.ula.birdbox` | `BirdBox.apk` | `^BirdBox\.apk$` | Pending r2 verification |
-| GIMP | `tech.ula.gimp` | `GIMP.apk` | `^GIMP\.apk$` | Pending r2 verification |
-| IDLE | `tech.ula.idle` | `IDLE.apk` | `^IDLE\.apk$` | Pending r2 verification |
+| FoxBox | `tech.ula.foxbox_pro` | `FoxBox.apk` | `^FoxBox\.apk$` | Verified |
+| Andacious | `tech.ula.andacious` | `Andacious.apk` | `^Andacious\.apk$` | Verified |
+| Gnuplot | `tech.ula.gnuplot` | `Gnuplot.apk` | `^Gnuplot\.apk$` | Verified |
+| R | `tech.ula.r` | `R.apk` | `^R\.apk$` | Verified |
+| LibreDocs | `tech.ula.libredocs` | `LibreDocs.apk` | `^LibreDocs\.apk$` | Verified |
+| deVStudio | `tech.ula.devstudio` | `deVStudio.apk` | `^deVStudio\.apk$` | Verified |
+| Inkscape | `tech.ula.inkscape` | `Inkscape.apk` | `^Inkscape\.apk$` | Verified |
+| BirdBox | `tech.ula.birdbox` | `BirdBox.apk` | `^BirdBox\.apk$` | Verified |
+| GIMP | `tech.ula.gimp` | `GIMP.apk` | `^GIMP\.apk$` | Verified |
+| IDLE | `tech.ula.idle` | `IDLE.apk` | `^IDLE\.apk$` | Verified |
 
 ## What changed in r2
 
@@ -29,6 +33,8 @@ The rc1 APKs are retained only as upgrade-test inputs and are not recommended fo
 - FoxBox now uses the same Android Gradle 8, target SDK 35, and JDK 17 compatibility baseline as the other launchers.
 - All APKs bundle the checksummed native files from **UserLAnd-Assets-Support v1.5.1** for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`.
 - The permission flow follows current Android behavior instead of asking for broad legacy permissions at every launch.
+- Android 13+ download broadcasts use the required receiver-export flag without relying on an incompatible support-library overload.
+- Session startup falls back to a direct Room lookup when its LiveData filesystem cache is briefly stale, removing the post-Settings first-run crash.
 - Runtime QA upgrades the real rc1 APK, cold-launches r2, checks one stable process for at least 20 seconds, scans for crashes/ANRs, and captures UI and permission evidence.
 
 The support archives are the practical small runtime update that can be bundled safely in each APK. Full Linux distributions, desktop packages, and application payloads remain **first-run downloads**: embedding all of them would make each launcher extremely large and would duplicate fast-changing upstream packages across ten APKs.
@@ -49,7 +55,7 @@ No launcher requests camera access. File import/export uses Android's document p
 
 ## Install and update
 
-Once the r2 verification workflow succeeds, the ten signed APKs, `SHA256SUMS`, and `release-manifest.json` will appear under `v2026.08.29-r2`. The manifest records every source SHA, the shared library revision, the support-asset checksums, exact package/version metadata, and the signing certificate.
+The [v2026.08.29-r2 release](https://github.com/Zfkirke0109/UserLAnd-Apps/releases/tag/v2026.08.29-r2) contains the ten emulator-verified signed APKs, `SHA256SUMS`, and `release-manifest.json`. The manifest records every source SHA, the shared library revision, support-asset checksums, exact package/version metadata, and the signing certificate.
 
 For update notifications, add this repository URL to [Obtainium](https://github.com/ImranR98/Obtainium) once per app and use its exact APK filter from the table:
 

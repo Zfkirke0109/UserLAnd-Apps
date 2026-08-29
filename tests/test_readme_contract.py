@@ -3,12 +3,15 @@ from pathlib import Path
 
 
 class ReadmeContractTests(unittest.TestCase):
-    def test_readme_describes_r2_without_claiming_unrun_verification(self):
+    def test_readme_records_the_verified_r2_release_and_runtime_evidence(self):
         text = Path("README.md").read_text(encoding="utf-8")
 
         for required in (
             "2026.08.29-r2",
-            "Pending r2 verification",
+            "All ten apps passed",
+            "v2026.08.29-r2",
+            "actions/runs/33255923668",
+            "actions/runs/33255923710",
             "UserLAnd-Assets-Support v1.5.1",
             "POST_NOTIFICATIONS",
             "MANAGE_EXTERNAL_STORAGE",
@@ -18,7 +21,7 @@ class ReadmeContractTests(unittest.TestCase):
             "7f08dcf54fcae40bb96fd20e1c057c8ac89c2fde",
         ):
             self.assertIn(required, text)
-        self.assertNotIn("All ten apps passed", text)
+        self.assertNotIn("Pending r2 verification", text)
         self.assertNotIn("JDK 11 for FoxBox", text)
 
 
