@@ -216,8 +216,11 @@ class CompatibilityTests(unittest.TestCase):
                 "registerReceiver(\n            downloadBroadcastReceiver" in operation.get(
                     "old", ""
                 )
-                and "ContextCompat.registerReceiver(" in operation.get("new", "")
-                and "ContextCompat.RECEIVER_EXPORTED" in operation.get("new", "")
+                and "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU"
+                in operation.get("new", "")
+                and "Context.RECEIVER_EXPORTED" in operation.get("new", "")
+                and "ContextCompat.RECEIVER_EXPORTED"
+                not in operation.get("new", "")
                 and "DownloadManager.ACTION_DOWNLOAD_COMPLETE"
                 in operation.get("new", "")
                 for operation in operations

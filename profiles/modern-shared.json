@@ -81,7 +81,7 @@
       "type": "replace",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
       "old": "        registerReceiver(\n            downloadBroadcastReceiver,\n            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)\n        )",
-      "new": "        ContextCompat.registerReceiver(\n            this,\n            downloadBroadcastReceiver,\n            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),\n            ContextCompat.RECEIVER_EXPORTED\n        )",
+      "new": "        val downloadFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\n            registerReceiver(\n                downloadBroadcastReceiver,\n                downloadFilter,\n                Context.RECEIVER_EXPORTED\n            )\n        } else {\n            registerReceiver(downloadBroadcastReceiver, downloadFilter)\n        }",
       "count": 1
     },
     {
