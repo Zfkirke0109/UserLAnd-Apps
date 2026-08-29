@@ -56,8 +56,9 @@ class EmulatorContractTests(unittest.TestCase):
             "android.permission.CAMERA",
             "MANAGE_EXTERNAL_STORAGE deny",
             "MANAGE_EXTERNAL_STORAGE allow",
-            "mCurrentFocus.*com\\.android\\.settings",
-            "mCurrentFocus.*permissioncontroller",
+            "assert_visible_window.py",
+            "com.android.settings",
+            "com.android.permissioncontroller",
         ):
             self.assertIn(required, text)
 
