@@ -49,10 +49,10 @@ read_version_name() {
 assert_no_app_crash() {
   adb logcat -b crash -d > "$EVIDENCE_DIR/crash-current.txt"
   adb logcat -d > "$EVIDENCE_DIR/logcat-current.txt"
-  if grep -Eq 'FATAL EXCEPTION|AndroidRuntime|ANR in|Force finishing activity' \
-      "$EVIDENCE_DIR/crash-current.txt" "$EVIDENCE_DIR/logcat-current.txt" &&
-     grep -Eq "$PACKAGE_ID|tech\.ula\.library" \
-      "$EVIDENCE_DIR/crash-current.txt" "$EVIDENCE_DIR/logcat-current.txt"
+  if ! python3 "$(dirname "$0")/../tools/assert_no_app_crash.py" \
+      "$PACKAGE_ID" \
+      "$EVIDENCE_DIR/crash-current.txt" \
+      "$EVIDENCE_DIR/logcat-current.txt"
   then
     fail "app-scoped fatal exception, ANR, or force-finish found"
   fi

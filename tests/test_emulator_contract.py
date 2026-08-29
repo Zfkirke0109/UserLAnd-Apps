@@ -31,13 +31,10 @@ class EmulatorContractTests(unittest.TestCase):
 
         for required in (
             "assert_no_app_crash",
+            "assert_no_app_crash.py",
             "process died during stability window",
             "tech.ula.library.MainActivity",
             "adb logcat -b crash -d",
-            "FATAL EXCEPTION",
-            "AndroidRuntime",
-            "ANR in",
-            "Force finishing activity",
             "uiautomator dump",
             "ui.xml",
             "screenshot.png",
