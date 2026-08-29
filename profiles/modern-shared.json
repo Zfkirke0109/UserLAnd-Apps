@@ -14,6 +14,32 @@
       "old_sha256": "a0616c39d47c6f05e5fe50564de00bcac8a2f5d499fbe773c2fe73eacd6dc6c3"
     },
     {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3FilesystemManagerTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3FilesystemManagerTest.kt",
+      "sha256": "c71eac02b43f62473c1ea14771c7ca00ff3a17e22084bd817257be5d949394ca"
+    },
+    {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/FilesystemManager.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/FilesystemManager.kt",
+      "old_sha256": "e6c88329469c77894f4514e8c5a56a33b270eac32cb2a58653717211d477cee8"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/FilesystemManagerTest.kt",
+      "old": "\n    @Test\n    fun `Calling extract filesystem uses the appropriate command`() {\n        val command = \"/support/common/extractFilesystem.sh\"\n\n        val requiredFilesystemType = \"testDist\"\n        val fakeArchitecture = \"testArch\"\n        val filesystem = Filesystem(0, \"apps\",\n                archType = fakeArchitecture, distributionType = requiredFilesystemType, isAppsFilesystem = true,\n                defaultUsername = \"username\", defaultPassword = \"password\", defaultVncPassword = \"vncpass\")\n        val filesystemDirName = \"${filesystem.id}\"\n\n        val defaultEnvironmentalVariables = hashMapOf(\"INITIAL_USERNAME\" to \"username\",\n                \"INITIAL_PASSWORD\" to \"password\", \"INITIAL_VNC_PASSWORD\" to \"vncpass\")\n        if (BuildConfig.FILESYSTEM_ONLY_ASSET)\n            defaultEnvironmentalVariables[\"EXCLUDE_SUPPORT\"] = \"--exclude support/common\"\n        else\n            defaultEnvironmentalVariables[\"EXCLUDE_SUPPORT\"] = \"--exclude support\"\n        whenever(mockBusyboxExecutor.executeProotCommand(\n                eq(command),\n                eq(filesystemDirName),\n                eq(true),\n                eq(defaultEnvironmentalVariables),\n                eq(statelessListener),\n                anyOrNull()\n        ))\n                .thenReturn(SuccessfulExecution)\n\n        val result = runBlocking {\n            filesystemManager.extractFilesystem(filesystem, statelessListener)\n        }\n        verify(mockBusyboxExecutor).executeProotCommand(\n                eq(command),\n                eq(filesystemDirName),\n                eq(true),\n                eq(defaultEnvironmentalVariables),\n                eq(statelessListener),\n                anyOrNull()\n        )\n        assertTrue(result is SuccessfulExecution)\n    }\n\n    @Test\n    fun `extractFilesystem logs errors`() {\n        val command = \"/support/common/extractFilesystem.sh\"\n\n        val requiredFilesystemType = \"testDist\"\n        val fakeArchitecture = \"testArch\"\n        val filesystem = Filesystem(0, \"apps\",\n                archType = fakeArchitecture, distributionType = requiredFilesystemType, isAppsFilesystem = true,\n                defaultUsername = \"username\", defaultPassword = \"password\", defaultVncPassword = \"vncpass\")\n        val filesystemDirName = \"${filesystem.id}\"\n\n        val defaultEnvironmentalVariables = hashMapOf(\"INITIAL_USERNAME\" to \"username\",\n                \"INITIAL_PASSWORD\" to \"password\", \"INITIAL_VNC_PASSWORD\" to \"vncpass\")\n        if (BuildConfig.FILESYSTEM_ONLY_ASSET)\n            defaultEnvironmentalVariables[\"EXCLUDE_SUPPORT\"] = \"--exclude support/common\"\n        else\n            defaultEnvironmentalVariables[\"EXCLUDE_SUPPORT\"] = \"--exclude support\"\n\n        val failureReason = \"reason\"\n        whenever(mockBusyboxExecutor.executeProotCommand(\n                eq(command),\n                eq(filesystemDirName),\n                eq(true),\n                eq(defaultEnvironmentalVariables),\n                eq(statelessListener),\n                anyOrNull()\n        ))\n                .thenReturn(FailedExecution(failureReason))\n\n        val result = runBlocking { filesystemManager.extractFilesystem(filesystem, statelessListener) }\n\n        assertEquals(FailedExecution(failureReason), result)\n    }\n\n",
+      "new": "\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/FilesystemManagerTest.kt",
+      "old": "    @Test\n    fun filesystemHasOnlyBeenSuccessfullyExtractedIfSuccessStatusFileExists() {\n        val supportDirectory = tempFolder.newFolder(\"target\", \"support\")\n        val successFile = File(\"${supportDirectory.path}/$filesystemExtractionSuccess\")\n        val failureFile = File(\"${supportDirectory.path}/$filesystemExtractionFailure\")\n\n        failureFile.createNewFile()\n        assertFalse(filesystemManager.hasFilesystemBeenSuccessfullyExtracted(\"target\"))\n\n        successFile.createNewFile()\n        assertTrue(filesystemManager.hasFilesystemBeenSuccessfullyExtracted(\"target\"))\n    }\n\n",
+      "new": "",
+      "count": 1
+    },
+    {
       "type": "replace_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/PermissionHandler.kt",
       "source": "compat/r2/PermissionHandler.kt",
