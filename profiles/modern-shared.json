@@ -212,6 +212,34 @@
     },
     {
       "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/daos/FilesystemDao.kt",
+      "anchor": "    @Query(\"select * from filesystem where name = :name\")\n    fun getFilesystemByName(name: String): Filesystem\n\n",
+      "text": "    @Query(\"select * from filesystem where id = :id\")\n    fun getFilesystemById(id: Long): Filesystem?\n\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "    private fun findFilesystemForSession(session: Session): Filesystem {\n        return filesystems.find { filesystem -> filesystem.id == session.filesystemId }!!\n    }\n\n    private fun handleSessionSelected(session: Session) {\n        if (activeSessions.isNotEmpty()) {\n            if (activeSessions.contains(session)) {\n                state.postValue(SessionIsRestartable(session))\n                return\n            }\n\n            state.postValue(SingleSessionSupported)\n            return\n        }\n\n        val filesystem = findFilesystemForSession(session)\n        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "new": "    private suspend fun findFilesystemForSession(session: Session): Filesystem? {\n        val cachedFilesystem = filesystems.find { filesystem ->\n            filesystem.id == session.filesystemId\n        }\n        if (cachedFilesystem != null) return cachedFilesystem\n\n        return withContext(Dispatchers.IO) {\n            filesystemDao.getFilesystemById(session.filesystemId)\n        }\n    }\n\n    private suspend fun handleSessionSelected(session: Session) {\n        if (activeSessions.isNotEmpty()) {\n            if (activeSessions.contains(session)) {\n                state.postValue(SessionIsRestartable(session))\n                return\n            }\n\n            state.postValue(SingleSessionSupported)\n            return\n        }\n\n        val filesystem = findFilesystemForSession(session)\n        if (filesystem == null) {\n            state.postValue(SessionFilesystemUnavailable(session))\n            return\n        }\n        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "anchor": "data class SessionIsRestartable(val session: Session) : SessionStartupState()\n",
+      "text": "data class SessionFilesystemUnavailable(val session: Session) : SessionStartupState()\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "anchor": "            is SessionIsRestartable -> {\n                state.postValue(SessionCanBeRestarted(newState.session))\n            }\n",
+      "text": "            is SessionFilesystemUnavailable -> {\n                postIllegalStateWithLog(NoSessionSelectedWhenTransitionNecessary)\n            }\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
       "path": "UserLAndLibrary/app/build.gradle",
       "anchor": "android {\n",
       "text": "    buildFeatures {\n        buildConfig true\n    }\n",
