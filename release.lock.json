@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "release_tag": "v2026.08.29-r2",
-  "version_name": "2026.08.29-r2",
-  "version_code": 2003329000,
-  "upgrade_from_tag": "v2026.08.29-rc1",
-  "upgrade_from_version_code": 2003324611
+  "release_tag": "v2026.08.29-r3",
+  "version_name": "2026.08.29-r3",
+  "version_code": 2003329001,
+  "upgrade_from_tag": "v2026.08.29-r2",
+  "upgrade_from_version_code": 2003329000
 }

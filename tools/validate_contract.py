@@ -89,10 +89,10 @@ def validate_contract(root: Path) -> list[str]:
         errors.append("support asset ABI/checksum set is invalid")
     if release.get("schema_version") != 1:
         errors.append("release schema_version must be 1")
-    if release.get("release_tag") != "v2026.08.29-r2":
-        errors.append("release tag must be v2026.08.29-r2")
-    if release.get("version_name") != "2026.08.29-r2":
-        errors.append("release version_name must be 2026.08.29-r2")
+    if release.get("release_tag") != "v2026.08.29-r3":
+        errors.append("release tag must be v2026.08.29-r3")
+    if release.get("version_name") != "2026.08.29-r3":
+        errors.append("release version_name must be 2026.08.29-r3")
     version_code = release.get("version_code")
     old_version_code = release.get("upgrade_from_version_code")
     if not isinstance(version_code, int) or not 2_000_000_000 <= version_code <= 2_100_000_000:
@@ -101,8 +101,10 @@ def validate_contract(root: Path) -> list[str]:
         isinstance(version_code, int) and version_code <= old_version_code
     ):
         errors.append("release version_code must exceed upgrade version_code")
-    if release.get("upgrade_from_tag") != "v2026.08.29-rc1":
-        errors.append("upgrade_from_tag must be v2026.08.29-rc1")
+    if release.get("upgrade_from_tag") != "v2026.08.29-r2":
+        errors.append("upgrade_from_tag must be v2026.08.29-r2")
+    if old_version_code != 2003329000:
+        errors.append("upgrade_from_version_code must be 2003329000")
     foxbox = next((app for app in apps if app.get("id") == "foxbox"), None)
     if foxbox is None or foxbox.get("source_ref") != (
         "7f08dcf54fcae40bb96fd20e1c057c8ac89c2fde"

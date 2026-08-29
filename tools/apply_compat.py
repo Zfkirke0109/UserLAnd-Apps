@@ -53,6 +53,16 @@ def _resolve_asset(root: Path, relative: str) -> Path:
     return path
 
 
+def _resolve_destination(root: Path, relative: str) -> Path:
+    root = root.resolve()
+    path = (root / relative).resolve()
+    if not path.is_relative_to(root):
+        raise ValueError(f"copy target escapes workspace: {relative}")
+    if path.exists() and not path.is_file():
+        raise ValueError(f"copy target is not a file: {relative}")
+    return path
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -91,6 +101,28 @@ def _replace_file(
     mode = path.stat().st_mode
     path.write_bytes(source.read_bytes())
     os.chmod(path, mode)
+    return True
+
+
+def _copy_file(root: Path, operation: dict, assets_root: Path) -> bool:
+    source = _resolve_asset(assets_root, operation["source"])
+    source_sha256 = _sha256(source)
+    if source_sha256 != operation.get("sha256"):
+        raise ValueError(
+            "copy_file source SHA-256 mismatch for "
+            f"{operation['source']}: {source_sha256}"
+        )
+    target = _resolve_destination(root, operation["path"])
+    source_bytes = source.read_bytes()
+    if target.exists():
+        if target.read_bytes() == source_bytes:
+            return False
+        raise ValueError(
+            "copy_file target already exists with different bytes: "
+            f"{operation['path']}"
+        )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, target)
     return True
 
 
@@ -179,6 +211,10 @@ def apply_profile(
     changed = []
     for operation in profile.get("operations", []):
         kind = operation.get("type")
+        if kind == "copy_file":
+            if _copy_file(root, operation, assets_root):
+                changed.append(operation["path"])
+            continue
         if kind == "replace_file":
             path = _resolve(root, operation["path"])
             if _replace_file(path, operation, assets_root):

@@ -94,6 +94,118 @@ class CompatibilityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "asset escapes directory"):
                 apply_profile(root, profile, assets_root=assets)
 
+    def test_copy_file_creates_exact_asset_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            source = assets / "compat/r3/NewRuntime.kt"
+            root.mkdir()
+            source.parent.mkdir(parents=True)
+            source.write_text("package example\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                    }
+                ]
+            }
+
+            changed = apply_profile(root, profile, assets_root=assets)
+
+            target = root / "src/NewRuntime.kt"
+            self.assertEqual(["src/NewRuntime.kt"], changed)
+            self.assertEqual(b"package example\n", target.read_bytes())
+            self.assertEqual([], apply_profile(root, profile, assets_root=assets))
+
+    def test_copy_file_rejects_source_or_destination_escape(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            root.mkdir()
+            assets.mkdir()
+            outside = base / "outside.kt"
+            outside.write_text("outside\n", encoding="utf-8")
+            digest = hashlib.sha256(outside.read_bytes()).hexdigest()
+
+            cases = (
+                ("src/NewRuntime.kt", "../outside.kt"),
+                ("../outside-target.kt", "inside.kt"),
+            )
+            (assets / "inside.kt").write_text("outside\n", encoding="utf-8")
+            for target, source in cases:
+                with self.subTest(target=target, source=source):
+                    profile = {
+                        "operations": [
+                            {
+                                "type": "copy_file",
+                                "path": target,
+                                "source": source,
+                                "sha256": digest,
+                            }
+                        ]
+                    }
+                    with self.assertRaisesRegex(ValueError, "escapes"):
+                        apply_profile(root, profile, assets_root=assets)
+
+    def test_copy_file_rejects_conflicting_existing_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            target = root / "src/NewRuntime.kt"
+            source = assets / "compat/r3/NewRuntime.kt"
+            target.parent.mkdir(parents=True)
+            source.parent.mkdir(parents=True)
+            target.write_text("user bytes\n", encoding="utf-8")
+            source.write_text("r3 bytes\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                    }
+                ]
+            }
+
+            with self.assertRaisesRegex(
+                ValueError, "target already exists with different bytes"
+            ):
+                apply_profile(root, profile, assets_root=assets)
+
+            self.assertEqual("user bytes\n", target.read_text(encoding="utf-8"))
+
+    def test_copy_file_rejects_source_hash_mismatch_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            source = assets / "compat/r3/NewRuntime.kt"
+            root.mkdir()
+            source.parent.mkdir(parents=True)
+            source.write_text("r3 bytes\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": "0" * 64,
+                    }
+                ]
+            }
+
+            with self.assertRaisesRegex(ValueError, "source SHA-256 mismatch"):
+                apply_profile(root, profile, assets_root=assets)
+
+            self.assertFalse((root / "src/NewRuntime.kt").exists())
+
     def test_r2_permission_handler_uses_api_and_feature_appropriate_access(self):
         overlay = Path("compat/r2/PermissionHandler.kt")
         self.assertTrue(overlay.is_file(), "r2 permission handler must exist")

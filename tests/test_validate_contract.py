@@ -37,14 +37,16 @@ class ContractTests(unittest.TestCase):
         ):
             (root / name).write_text(Path(name).read_text(encoding="utf-8"))
 
-    def test_r2_release_contract_is_exact_and_monotonic(self):
+    def test_r3_release_contract_is_exact_and_monotonic(self):
         release_path = Path("release.lock.json")
         self.assertTrue(release_path.is_file(), "release.lock.json must exist")
         release = json.loads(release_path.read_text(encoding="utf-8"))
 
-        self.assertEqual("v2026.08.29-r2", release["release_tag"])
-        self.assertEqual("2026.08.29-r2", release["version_name"])
-        self.assertEqual(2003329000, release["version_code"])
+        self.assertEqual("v2026.08.29-r3", release["release_tag"])
+        self.assertEqual("2026.08.29-r3", release["version_name"])
+        self.assertEqual(2003329001, release["version_code"])
+        self.assertEqual("v2026.08.29-r2", release["upgrade_from_tag"])
+        self.assertEqual(2003329000, release["upgrade_from_version_code"])
         self.assertGreater(
             release["version_code"], release["upgrade_from_version_code"]
         )
@@ -57,16 +59,16 @@ class ContractTests(unittest.TestCase):
                 (root / name).write_text(Path(name).read_text(encoding="utf-8"))
             release = {
                 "schema_version": 1,
-                "release_tag": "v2026.08.29-r2",
+                "release_tag": "v2026.08.29-r3",
                 "version_name": "2026.08.29-rc2",
-                "version_code": 2003329000,
-                "upgrade_from_tag": "v2026.08.29-rc1",
-                "upgrade_from_version_code": 2003324611,
+                "version_code": 2003329001,
+                "upgrade_from_tag": "v2026.08.29-r2",
+                "upgrade_from_version_code": 2003329000,
             }
             (root / "release.lock.json").write_text(json.dumps(release))
 
             self.assertIn(
-                "release version_name must be 2026.08.29-r2",
+                "release version_name must be 2026.08.29-r3",
                 validate_contract(root),
             )
 

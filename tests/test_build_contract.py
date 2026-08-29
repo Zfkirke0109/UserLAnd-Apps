@@ -16,7 +16,7 @@ class BuildContractTests(unittest.TestCase):
         self.assertIn("tools/verify_dependency_tree.py", text)
         self.assertIn("UserLAndLibrary", text)
 
-    def test_build_defaults_to_locked_r2_version(self):
+    def test_build_defaults_to_locked_r3_version(self):
         text = Path("scripts/build_app.sh").read_text()
 
         self.assertIn("release.lock.json", text)

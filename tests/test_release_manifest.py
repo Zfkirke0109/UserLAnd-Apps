@@ -36,7 +36,7 @@ class ReleaseManifestTests(unittest.TestCase):
 
         return dist, sources, release, metadata
 
-    def test_manifest_records_exact_r2_and_shared_provenance(self):
+    def test_manifest_records_exact_r3_and_shared_provenance(self):
         with tempfile.TemporaryDirectory() as directory:
             dist, _sources, _release, metadata = self._fixture(directory)
 
@@ -50,12 +50,12 @@ class ReleaseManifestTests(unittest.TestCase):
                         "2026-08-29T12:00:00+00:00",
                     )
                 except TypeError as error:
-                    self.fail(f"r2 manifest interface is missing: {error}")
+                    self.fail(f"r3 manifest interface is missing: {error}")
 
             self.assertEqual(2, manifest["schema_version"])
-            self.assertEqual("v2026.08.29-r2", manifest["release_tag"])
-            self.assertEqual("2026.08.29-r2", manifest["version_name"])
-            self.assertEqual(2003329000, manifest["version_code"])
+            self.assertEqual("v2026.08.29-r3", manifest["release_tag"])
+            self.assertEqual("2026.08.29-r3", manifest["version_name"])
+            self.assertEqual(2003329001, manifest["version_code"])
             self.assertEqual(
                 {
                     "repository": "Lily-Rader/UserLAndLibrary",
@@ -67,13 +67,13 @@ class ReleaseManifestTests(unittest.TestCase):
             self.assertEqual(4, len(manifest["support_assets"]["archives"]))
             self.assertEqual(10, len(manifest["apps"]))
             self.assertTrue(
-                all(app["version_name"].endswith("r2") for app in manifest["apps"])
+                all(app["version_name"].endswith("r3") for app in manifest["apps"])
             )
 
     def test_manifest_rejects_apk_version_that_differs_from_release_lock(self):
         for field, value in (
             ("version_code", 2003328999),
-            ("version_name", "2026.08.29-not-r2"),
+            ("version_name", "2026.08.29-not-r3"),
         ):
             with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
                 dist, _sources, _release, metadata = self._fixture(

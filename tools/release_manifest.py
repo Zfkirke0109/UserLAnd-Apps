@@ -92,8 +92,8 @@ def build_manifest(
     version_code = release["version_code"]
     version_name = release["version_name"]
 
-    if not version_name.endswith("r2"):
-        raise ValueError("release version_name must end with r2")
+    if not version_name.endswith("r3"):
+        raise ValueError("release version_name must end with r3")
     if release_tag != f"v{version_name}":
         raise ValueError("release tag must be v followed by version_name")
     expected_names = {app["output_name"] for app in apps}

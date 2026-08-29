@@ -1,0 +1,91 @@
+name: Generate immutable r3 payload lock
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/userland-apps-r3
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.head_commit.message, 'Generate immutable r3 payload lock')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        app:
+          - foxbox
+          - andacious
+          - gnuplot
+          - r
+          - libredocs
+          - devstudio
+          - inkscape
+          - birdbox
+          - gimp
+          - idle
+        abi:
+          - arm64
+          - arm
+          - x86
+          - x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and hash exact release assets
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 tools/payload_lock.py record \
+            --app "${{ matrix.app }}" \
+            --abi "${{ matrix.abi }}" \
+            --sources sources.lock.json \
+            --output "payload-record-${{ matrix.app }}-${{ matrix.abi }}.json"
+
+      - name: Retain exact payload record
+        uses: actions/upload-artifact@v4
+        with:
+          name: payload-record-${{ matrix.app }}-${{ matrix.abi }}
+          path: payload-record-${{ matrix.app }}-${{ matrix.abi }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+  aggregate:
+    needs: record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all exact payload records
+        uses: actions/download-artifact@v4
+        with:
+          pattern: payload-record-*
+          path: payload-records
+          merge-multiple: true
+
+      - name: Aggregate verify and render runtime catalog
+        run: |
+          python3 tools/payload_lock.py aggregate \
+            --sources sources.lock.json \
+            --records payload-records \
+            --output payloads.lock.json
+          python3 tools/payload_lock.py verify payloads.lock.json
+          python3 tools/render_runtime_catalog.py \
+            payloads.lock.json compat/r3/assets/r3-payloads.json
+
+      - name: Retain verified payload lock and runtime catalog
+        uses: actions/upload-artifact@v4
+        with:
+          name: payload-lock-r3
+          path: |
+            payloads.lock.json
+            compat/r3/assets/r3-payloads.json
+          if-no-files-found: error
+          retention-days: 30
