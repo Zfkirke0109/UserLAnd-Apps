@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T08:00:18.847939+00:00",
+  "repository": "Zfkirke0109/Inkscape",
+  "source_ref": "9ee89399be6089a65adac118079e2d4615d2bff6"
+}

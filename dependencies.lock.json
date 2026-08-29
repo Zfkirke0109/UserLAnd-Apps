@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "userland_library": {
+    "repository": "Lily-Rader/UserLAndLibrary",
+    "ref": "8751d21debb0f336b2437106db46bc708e81b7d3"
+  },
+  "remote_desktop_clients": {
+    "repository": "CypherpunkArmory/remote-desktop-clients",
+    "ref": "408a5d3e2753f12f07430f816eaa3e40e9337462"
+  },
+  "termux_app": {
+    "repository": "CypherpunkArmory/termux-app",
+    "ref": "6833f4a898ae8afa45172c87e9ce20afd8a8fb52"
+  },
+  "freerdp": {
+    "repository": "FreeRDP/FreeRDP",
+    "ref": "c0020308ebd33cefbd4548f03697f0c186a3631b"
+  },
+  "native_archive": {
+    "url": "https://github.com/iiordanov/remote-desktop-clients/releases/download/dependencies/remote-desktop-clients-libs-1.tar.gz",
+    "sha256": "b8cbc1a46ca3237c7002d46737e01b3d9245c70fb78586114402a121a77b140c"
+  }
+}

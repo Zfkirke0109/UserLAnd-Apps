@@ -1,0 +1,33 @@
+{
+  "extends": "shared.json",
+  "operations": [
+    {
+      "type": "replace",
+      "path": "build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "insert_after",
+      "path": "build.gradle",
+      "anchor": "        appVersionName = '0.0.1'\n",
+      "text": "        compileApi = 31\n        targetApi = 31\n        minApi = 21\n        toolsVersion = '30.0.3'\n        versionCode = appVersionCode\n        versionName = appVersionName\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "app/build.gradle",
+      "old": "buildToolsVersion \"33.0.0\"",
+      "new": "buildToolsVersion \"30.0.3\"",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "CustomLibrary/build.gradle",
+      "old": "buildToolsVersion \"33.0.0\"",
+      "new": "buildToolsVersion \"30.0.3\"",
+      "count": 1
+    }
+  ]
+}

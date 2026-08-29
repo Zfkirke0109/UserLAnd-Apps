@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T08:00:30.333188+00:00",
+  "repository": "Zfkirke0109/BirdBox",
+  "source_ref": "1ab3f48a4b1f691abd072a5f45471504ae1d6374"
+}

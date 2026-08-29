@@ -1,0 +1,31 @@
+def androidKeystoreFile = System.getenv("ANDROID_KEYSTORE_FILE")
+def androidKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def androidKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+def androidKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
+[
+    ANDROID_KEYSTORE_FILE: androidKeystoreFile,
+    ANDROID_KEYSTORE_PASSWORD: androidKeystorePassword,
+    ANDROID_KEY_ALIAS: androidKeyAlias,
+    ANDROID_KEY_PASSWORD: androidKeyPassword,
+].each { name, value ->
+    if (value == null || value.trim().isEmpty()) {
+        throw new GradleException("Missing required signing environment variable: ${name}")
+    }
+}
+
+android {
+    signingConfigs {
+        release {
+            storeFile file(androidKeystoreFile)
+            storePassword androidKeystorePassword
+            keyAlias androidKeyAlias
+            keyPassword androidKeyPassword
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
+    }
+}

@@ -1,0 +1,101 @@
+{
+  "operations": [
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/termux-app/build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/remote-desktop-clients/build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/build.gradle",
+      "old": "jcenter()",
+      "new": "mavenCentral()",
+      "count": 2
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/remote-desktop-clients/pubkeyGenerator/build.gradle",
+      "old": "org.connectbot:sshlib:2.2.13",
+      "new": "org.connectbot:sshlib:2.2.3",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/termux-app/terminal-emulator/build.gradle",
+      "old": "plugins {\n    id \"com.jfrog.bintray\" version \"1.8.5\"\n    id \"com.github.dcendents.android-maven\" version \"2.1\"\n}\n\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "delete_lines_matching",
+      "path": "UserLAndLibrary/termux-app/terminal-emulator/build.gradle",
+      "pattern": "^apply from: '../scripts/bintray-publish\\.gradle'$",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
+      "old": "plugins {\n    id \"com.jfrog.bintray\" version \"1.8.5\"\n    id \"com.github.dcendents.android-maven\" version \"2.1\"\n}\n\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "delete_lines_matching",
+      "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
+      "pattern": "^apply from: '../scripts/bintray-publish\\.gradle'$",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/build.gradle",
+      "old": "def getVersionName = { ->\n    def stdout = new ByteArrayOutputStream()\n    exec {\n        commandLine 'git', 'describe', '--tags'\n        standardOutput = stdout\n    }\n    return stdout.toString().trim()\n}\n",
+      "new": "def getVersionName = { ->\n    try {\n        def stdout = new ByteArrayOutputStream()\n        def stderr = new ByteArrayOutputStream()\n        def result = exec {\n            commandLine 'git', 'describe', '--tags', '--always', '--dirty'\n            standardOutput = stdout\n            errorOutput = stderr\n            ignoreExitValue = true\n        }\n        def version = stdout.toString().trim()\n        if (result.exitValue == 0 && version) {\n            return version\n        }\n    } catch (Exception ignored) {\n    }\n    return '0.0.0'\n}\n",
+      "count": 1
+    },
+    {
+      "type": "set_xml_exported",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/src/main/AndroidManifest.xml",
+      "components": [
+        {"tag": "activity", "name": ".presentation.ShortcutsActivity"},
+        {"tag": "activity-alias", "name": ".presentation.CreateShortcuts"},
+        {"tag": "activity", "name": ".presentation.BookmarkActivity"},
+        {"tag": "activity", "name": ".presentation.SessionActivity"},
+        {"tag": "receiver", "name": ".application.NetworkStateReceiver"}
+      ],
+      "count": 5
+    },
+    {
+      "type": "assert_absent",
+      "path": "UserLAndLibrary/termux-app/terminal-emulator/build.gradle",
+      "pattern": "com\\.jfrog\\.bintray|android-maven|bintray-publish"
+    },
+    {
+      "type": "assert_absent",
+      "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
+      "pattern": "com\\.jfrog\\.bintray|android-maven|bintray-publish"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "exclusions": [
+    ".git",
+    ".github",
+    ".gradle",
+    "UserLAndLibrary",
+    "build",
+    "local.properties"
+  ],
+  "imported_at_utc": "2026-08-29T08:00:39.501664+00:00",
+  "repository": "Zfkirke0109/GIMP",
+  "source_ref": "a74281ee21f1eb5e460a6204cb954dbd059675df"
+}
