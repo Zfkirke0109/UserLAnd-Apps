@@ -147,8 +147,9 @@ PY
 wait_for_permission_controller() {
   for attempt in $(seq 1 20); do
     adb shell dumpsys window windows > "$EVIDENCE_DIR/runtime-permission-window.txt"
-    if grep -Eq 'mCurrentFocus.*permissioncontroller|mFocusedApp.*permissioncontroller' \
-      "$EVIDENCE_DIR/runtime-permission-window.txt"
+    if python3 "$(dirname "$0")/../tools/assert_visible_window.py" \
+      "$EVIDENCE_DIR/runtime-permission-window.txt" \
+      com.android.permissioncontroller
     then
       dump_ui "$EVIDENCE_DIR/runtime-permission.xml"
       return 0
@@ -162,8 +163,9 @@ wait_for_permission_controller() {
 wait_for_all_files_settings() {
   for attempt in $(seq 1 20); do
     adb shell dumpsys window windows > "$EVIDENCE_DIR/all-files-settings-window.txt"
-    if grep -Eq 'mCurrentFocus.*com\.android\.settings|mFocusedApp.*com\.android\.settings' \
-      "$EVIDENCE_DIR/all-files-settings-window.txt"
+    if python3 "$(dirname "$0")/../tools/assert_visible_window.py" \
+      "$EVIDENCE_DIR/all-files-settings-window.txt" \
+      com.android.settings
     then
       dump_ui "$EVIDENCE_DIR/all-files-settings.xml"
       return 0
