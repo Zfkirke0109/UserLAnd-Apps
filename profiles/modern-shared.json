@@ -31,6 +31,13 @@
     },
     {
       "type": "insert_after",
+      "path": "CustomLibrary/build.gradle",
+      "anchor": "    defaultConfig {\n",
+      "text": "        buildConfigField 'boolean', 'DEFAULT_PREF_CUSTOM_SCALING_ENABLED', 'true'\n        resValue \"string\", \"default_pref_custom_scaling_enabled\", \"true\"\n        buildConfigField 'String', 'DEFAULT_PREF_SCALING', \"\\\"1.0\\\"\"\n        resValue \"string\", \"default_pref_scaling\", \"1.0\"\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
       "path": "UserLAndLibrary/app/build.gradle",
       "anchor": "android {\n",
       "text": "    namespace 'tech.ula.library'\n",

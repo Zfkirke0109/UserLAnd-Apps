@@ -57,6 +57,26 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_modern_profiles_restore_foxbox_scaling_defaults(self):
+        modern = load_profile(Path("profiles/andacious.json"))
+        legacy = load_profile(Path("profiles/foxbox.json"))
+
+        def scaling_defaults(profile):
+            return [
+                operation
+                for operation in profile["operations"]
+                if operation.get("path") == "CustomLibrary/build.gradle"
+                and "DEFAULT_PREF_CUSTOM_SCALING_ENABLED"
+                in operation.get("text", "")
+                and "default_pref_custom_scaling_enabled"
+                in operation.get("text", "")
+                and "DEFAULT_PREF_SCALING" in operation.get("text", "")
+                and "default_pref_scaling" in operation.get("text", "")
+            ]
+
+        self.assertEqual(1, len(scaling_defaults(modern)))
+        self.assertEqual([], scaling_defaults(legacy))
+
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
