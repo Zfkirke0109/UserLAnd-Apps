@@ -1,5 +1,5 @@
 {
-  "extends": "shared.json",
+  "extends": "modern-shared.json",
   "operations": [
     {
       "type": "insert_after",

@@ -8,6 +8,21 @@ from tools.apply_compat import apply_profile, load_profile
 
 
 class CompatibilityTests(unittest.TestCase):
+    def test_modern_profiles_add_namespaces_without_affecting_foxbox(self):
+        modern = load_profile(Path("profiles/andacious.json"))
+        legacy = load_profile(Path("profiles/foxbox.json"))
+
+        def has_bvnc_namespace(profile):
+            return any(
+                operation.get("path")
+                == "UserLAndLibrary/remote-desktop-clients/bVNC/build.gradle"
+                and "namespace" in operation.get("text", "")
+                for operation in profile["operations"]
+            )
+
+        self.assertTrue(has_bvnc_namespace(modern))
+        self.assertFalse(has_bvnc_namespace(legacy))
+
     def test_check_mode_preserves_dangling_symlinks(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

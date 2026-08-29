@@ -1,0 +1,61 @@
+{
+  "extends": "shared.json",
+  "operations": [
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'tech.ula.library'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/app/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/terminal-view/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux.view'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/termux-app/terminal-emulator/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.termux.terminal'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/bVNC/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.undatech.remoteClientUi'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/pubkeyGenerator/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.iiordanov.pubkeygenerator'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.undatech.remoteClientLib'\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/build.gradle",
+      "anchor": "android {\n",
+      "text": "    namespace 'com.freerdp.freerdpcore'\n",
+      "count": 1
+    }
+  ]
+}
