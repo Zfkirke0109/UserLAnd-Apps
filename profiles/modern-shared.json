@@ -29,7 +29,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
       "source": "compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
-      "sha256": "4ce307a289dcb33d03bdbe07e265ab07690ee097783a19f2ca9a4a635f31ba07"
+      "sha256": "5f5060284be389958f20c43b6634d0fb5ec28bd299fb2f79cd928c852412c164"
     },
     {
       "type": "copy_file",
@@ -41,7 +41,19 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
-      "sha256": "135005827a8d13838e0a2906faf5ab1ea19c867921cdf4515b1112e972f4ddeb"
+      "sha256": "41556cef8d6b1e0bcc514519ca0c80813c48f50e67f8354c06be9050ed8be69c"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3TransferOutageTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3TransferOutageTest.kt",
+      "sha256": "c94bdd6902690b8b4a1efc2b511d3c08e5bba51260c52996d3ea13768c38d158"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3LateDownloadSignalTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3LateDownloadSignalTest.kt",
+      "sha256": "e561b22259b143a579e389e17ecc909d1a6072dbc1e7f0f21949bc64ca320867"
     },
     {
       "type": "replace_file",
@@ -121,7 +133,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
       "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
-      "sha256": "80ef76a9877e2f9dfa30eb8d540247cc72eb93e3ffeeb82e77bb67f76dcca584"
+      "sha256": "6d26e05929f535dc0500ff80784e6713cf4c1eba31d0baf293d70d070e26adf6"
     },
     {
       "type": "copy_file",

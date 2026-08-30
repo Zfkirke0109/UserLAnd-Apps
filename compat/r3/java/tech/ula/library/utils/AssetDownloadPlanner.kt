@@ -149,3 +149,19 @@ object AssetDownloadPlanner {
         }
     }
 }
+
+/**
+ * Whether a completion signal still concerns the batch we are running.
+ *
+ * The state machine accepts a completion event when it is either still
+ * downloading or the signal is not ours; a signal that is neither leaves it in
+ * IncorrectSessionTransition. Once a batch has been reported, the download
+ * service can still emit a late signal, and the machine has moved on. Both
+ * `downloadIsForUserland` and `handleDownloadComplete` read this one predicate
+ * so they cannot disagree: if the signal is not ours the transition is allowed,
+ * and the handler must then do nothing rather than re-announce an outcome the
+ * machine has already acted on.
+ */
+fun signalBelongsToBatch(batch: DownloadBatch?, downloadsAreInProgress: Boolean): Boolean {
+    return batch != null && downloadsAreInProgress
+}

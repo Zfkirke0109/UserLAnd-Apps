@@ -28,7 +28,10 @@ data class TransferFailed(
  */
 class ResumableAssetTransfer(
     private val client: OkHttpClient = defaultClient(),
-    private val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS
+    private val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
+    private val backoffMillis: (Int) -> Long = ::defaultBackoffMillis,
+    private val sleeper: (Long) -> Unit = { millis -> Thread.sleep(millis) },
+    private val maxTotalAttempts: Int = DEFAULT_MAX_TOTAL_ATTEMPTS
 ) {
 
     fun transfer(
@@ -41,14 +44,26 @@ class ResumableAssetTransfer(
         var current = item
         var lastReason = "The download did not start."
 
-        repeat(maxAttempts) { attempt ->
-            current = current.copy(attempts = attempt + 1)
+        // The budget counts attempts that achieved nothing. An attempt that wrote
+        // bytes made progress and earns a fresh budget, so a large asset over a
+        // flaky link is not capped at a handful of interruptions; a hard ceiling
+        // still stops a transfer that would otherwise run forever.
+        var attemptsSinceProgress = 0
+        var totalAttempts = 0
+
+        while (attemptsSinceProgress < maxAttempts && totalAttempts < maxTotalAttempts) {
+            if (totalAttempts > 0) sleeper(backoffMillis(attemptsSinceProgress - 1))
+            totalAttempts++
+            current = current.copy(attempts = totalAttempts)
+            val bytesBefore = current.bytesWritten
             when (val outcome = attemptTransfer(current, onProgress)) {
                 is TransferSucceeded -> return outcome
                 is TransferFailed -> {
                     if (outcome.terminal) return outcome
                     lastReason = outcome.reason
                     current = outcome.item
+                    attemptsSinceProgress =
+                        if (current.bytesWritten > bytesBefore) 0 else attemptsSinceProgress + 1
                 }
             }
         }
@@ -197,6 +212,9 @@ class ResumableAssetTransfer(
 
     companion object {
         const val DEFAULT_MAX_ATTEMPTS = 5
+
+        /** Ceiling across the whole transfer, however much progress is made. */
+        const val DEFAULT_MAX_TOTAL_ATTEMPTS = 50
         private const val BUFFER_BYTES = 8192
         private const val HTTP_PARTIAL_CONTENT = 206
         private const val HTTP_RANGE_NOT_SATISFIABLE = 416
@@ -211,4 +229,16 @@ class ResumableAssetTransfer(
                 .build()
         }
     }
+}
+
+/**
+ * How long to wait before retrying after a failure that is not terminal.
+ *
+ * A retry that is issued immediately is spent for nothing while the network is
+ * down, so the delays grow: 1s, 2s, 4s, 8s, 16s. Five attempts then span about
+ * half a minute rather than a few milliseconds.
+ */
+fun defaultBackoffMillis(attemptsSinceProgress: Int): Long {
+    val capped = attemptsSinceProgress.coerceIn(0, 4)
+    return 1000L shl capped
 }
