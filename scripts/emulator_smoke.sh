@@ -54,6 +54,16 @@ capture_evidence() {
     > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
   adb shell find "$APP_FILES" -maxdepth 3 \
     > "$EVIDENCE_DIR/app-files-tree.txt" 2>/dev/null || true
+  # The journal is cleared once downloads are staged, so on an extraction
+  # failure it can no longer say whether the archive arrived whole. Record what
+  # is actually on disk: a short archive and a BusyBox that will not run produce
+  # the same symptom otherwise.
+  adb shell "find $APP_FILES -name 'rootfs.tar.gz' -exec ls -l {} \; 2>/dev/null" \
+    > "$EVIDENCE_DIR/rootfs-archives.txt" 2>/dev/null || true
+  adb shell "ls -l $APP_FILES/support/busybox_static $APP_FILES/support/proot 2>&1" \
+    >> "$EVIDENCE_DIR/rootfs-archives.txt" 2>/dev/null || true
+  adb shell "$APP_FILES/support/busybox_static --help 2>&1 | head -3" \
+    >> "$EVIDENCE_DIR/rootfs-archives.txt" 2>/dev/null || true
   adb shell cmd appops get "$PACKAGE_ID" \
     > "$EVIDENCE_DIR/appops.txt" 2>&1 || true
   aapt dump permissions "$NEW_APK" \

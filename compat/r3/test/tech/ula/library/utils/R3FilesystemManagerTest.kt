@@ -257,6 +257,15 @@ class R3FilesystemManagerTest {
         val result = filesystemManager.validateRootfsArchive(archive)
 
         assertTrue(result is FailedExecution)
+        // A bare "could not be read" cost a 40 minute release run that still
+        // could not be diagnosed: it hides whether BusyBox refused to run or the
+        // archive on disk was short. Both facts must survive.
+        val reason = (result as FailedExecution).reason
+        assertTrue("the underlying cause must survive", reason.contains("gzip: invalid magic"))
+        assertTrue(
+            "the size actually on disk must be reported",
+            reason.contains("${archive.length()} bytes on disk")
+        )
     }
 
     @Test

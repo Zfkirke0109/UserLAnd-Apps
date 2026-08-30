@@ -73,7 +73,18 @@ class FilesystemManager(
         ) { line -> members.add(line.trim()) }
 
         if (listing !is SuccessfulExecution) {
-            return FailedExecution("The $rootfsArchiveName download could not be read.")
+            // Saying only that the archive could not be read throws away the one
+            // fact needed to tell a truncated download from a BusyBox that will
+            // not run. Carry the underlying reason and the size we actually have.
+            val cause = when (listing) {
+                is FailedExecution -> listing.reason
+                is MissingExecutionAsset -> "missing ${listing.asset}"
+                else -> "no reason reported"
+            }
+            return FailedExecution(
+                "The $rootfsArchiveName download could not be read " +
+                    "(${archive.length()} bytes on disk, $cause)."
+            )
         }
         if (members.isEmpty()) {
             return FailedExecution("The $rootfsArchiveName download contains no files.")
