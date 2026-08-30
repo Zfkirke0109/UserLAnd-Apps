@@ -135,8 +135,14 @@ class R3AssetDownloadRunnerTest {
 
         runner.run()
 
+        // 14 bytes of assets then 19 of rootfs, so progress moves within a file too.
+        val total = (assetsBody.length + rootfsBody.length).toLong()
         assertEquals(
-            listOf(BatchProgress(0, 2), BatchProgress(1, 2), BatchSucceeded),
+            listOf(
+                BatchProgress(0, 2, 0, total),
+                BatchProgress(1, 2, assetsBody.length.toLong(), total),
+                BatchSucceeded
+            ),
             lifecycle.progress
         )
     }
@@ -162,7 +168,15 @@ class R3AssetDownloadRunnerTest {
         )
         checking.run()
 
-        assertEquals(listOf(BatchProgress(0, 2), BatchProgress(1, 2), BatchSucceeded), durable)
+        val total = (assetsBody.length + rootfsBody.length).toLong()
+        assertEquals(
+            listOf(
+                BatchProgress(0, 2, 0, total),
+                BatchProgress(1, 2, assetsBody.length.toLong(), total),
+                BatchSucceeded
+            ),
+            durable
+        )
     }
 
     @Test

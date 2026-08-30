@@ -17,13 +17,13 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3FilesystemManagerTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3FilesystemManagerTest.kt",
-      "sha256": "c71eac02b43f62473c1ea14771c7ca00ff3a17e22084bd817257be5d949394ca"
+      "sha256": "2b8cd33f94a86ef6bec235bdb0273af193ddfb86f4ebdb1986aee471b884c190"
     },
     {
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt",
       "source": "compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
-      "sha256": "57949156352e9ef00d297992f6c83043a477ccdd1027774fbd458c7768e193af"
+      "sha256": "217801221cf23fccb521483a773a2d9b85a9958bb674d6d5ec1a49f018139c84"
     },
     {
       "type": "copy_file",
@@ -121,7 +121,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
       "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
-      "sha256": "ee47a0e46a0bc2291948f7b135ac72b04125d57a0d120a02740a54013bf07184"
+      "sha256": "80ef76a9877e2f9dfa30eb8d540247cc72eb93e3ffeeb82e77bb67f76dcca584"
     },
     {
       "type": "copy_file",
@@ -157,13 +157,13 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
-      "sha256": "bd8372bf5d5d7dba48ea94c563dc5eb0250cf972785c938bf4036e2ebfa3afe3"
+      "sha256": "353dc68907381bf70eddb41b57c6a5010e49080757710e3546c9d597f72996bf"
     },
     {
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
-      "sha256": "06b00b9202671e998a9e6e04246451710800651c41ed1c38d1131d365b8e666c"
+      "sha256": "26dc9f5a85e8d4393e7bfedeb2da6cf90b6f0e92af685192aa8adf342e346f83"
     },
     {
       "type": "copy_file",

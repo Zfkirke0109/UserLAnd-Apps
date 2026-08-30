@@ -666,6 +666,49 @@ class CompatibilityTests(unittest.TestCase):
             )
         )
 
+    def test_r3_repair_touches_only_the_extraction_markers(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        body = text.split("fun invalidateExtraction(", 1)[1].split("\n    fun ", 1)[0]
+
+        self.assertIn("success.delete()", body)
+        self.assertIn("failure.delete()", body)
+        # A repair that reached further could destroy the data the user came back
+        # for. Nothing recursive, and nothing outside the two markers.
+        self.assertNotIn("deleteRecursively", body)
+        self.assertNotIn("walkBottomUp", body)
+        for forbidden in ("home", "rootfs", "archive", "filesystemRoot"):
+            self.assertNotIn(forbidden, body, forbidden)
+
+    def test_r3_progress_carries_bytes_not_only_file_counts(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        journal = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        planner_text = planner.read_text(encoding="utf-8")
+        journal_text = journal.read_text(encoding="utf-8")
+
+        # A single 200 MB rootfs makes a file-count bar sit still for minutes.
+        self.assertIn("val bytesWritten: Long", planner_text)
+        self.assertIn("val totalBytes: Long", planner_text)
+        self.assertIn("val bytesWritten: Long get() = items.sumOf { it.bytesWritten }", journal_text)
+        # An unknown length must not render as a wrong total.
+        self.assertIn("expectedBytes == DownloadItem.UNKNOWN_LENGTH }) 0", journal_text)
+
+    def test_r3_retry_resubmits_only_what_is_outstanding(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        text = planner.read_text(encoding="utf-8")
+
+        body = text.split("fun retry(", 1)[1].split("\n    private fun ", 1)[0]
+
+        # Completed items are returned untouched, so Retry costs only the remainder.
+        self.assertIn("if (item.state == DownloadItemState.COMPLETE) {", body)
+        self.assertIn("item\n            } else {", body)
+        self.assertIn("attempts = 0", body)
+        self.assertIn("state = DownloadItemState.PENDING", body)
+        self.assertIn("error = null", body)
+        # The resume offset has to survive; the part file is still on disk.
+        self.assertNotIn("bytesWritten = 0", body)
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 

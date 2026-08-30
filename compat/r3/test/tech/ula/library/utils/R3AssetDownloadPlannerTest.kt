@@ -71,10 +71,10 @@ class R3AssetDownloadPlannerTest {
     @Test
     fun outcomeReportsProgressUntilEveryItemIsComplete() {
         var batch = plan()
-        assertEquals(BatchProgress(0, 2), AssetDownloadPlanner.outcomeOf(batch))
+        assertEquals(BatchProgress(0, 2, 0, 12288), AssetDownloadPlanner.outcomeOf(batch))
 
         batch = batch.withItem(batch.items[0].copy(state = DownloadItemState.COMPLETE))
-        assertEquals(BatchProgress(1, 2), AssetDownloadPlanner.outcomeOf(batch))
+        assertEquals(BatchProgress(1, 2, 0, 12288), AssetDownloadPlanner.outcomeOf(batch))
 
         batch = batch.withItem(batch.items[1].copy(state = DownloadItemState.COMPLETE))
         assertEquals(BatchSucceeded, AssetDownloadPlanner.outcomeOf(batch))
@@ -169,6 +169,86 @@ class R3AssetDownloadPlannerTest {
         assertEquals(DownloadBatchState.RUNNING, updated.state)
         assertEquals("debian-assets.tar.gz-v7.7.9", AssetDownloadPlanner.nextPending(updated)!!.id)
         assertEquals(100L, updated.items[0].bytesWritten)
+    }
+
+    @Test
+    fun progressCarriesBytesAsWellAsFileCounts() {
+        var batch = plan()
+        batch = batch.withItem(
+            batch.items[0].copy(state = DownloadItemState.COMPLETE, bytesWritten = 4096)
+        )
+        batch = batch.withItem(batch.items[1].copy(bytesWritten = 2048))
+
+        // A single 200 MB rootfs makes "1 of 2" sit still for minutes.
+        assertEquals(
+            BatchProgress(1, 2, 6144, 12288),
+            AssetDownloadPlanner.outcomeOf(batch)
+        )
+    }
+
+    @Test
+    fun totalBytesIsZeroWhenAnyLengthIsUnknown() {
+        val batch = AssetDownloadPlanner.plan(
+            1, 1,
+            listOf(requirements[0], requirements[1].copy(expectedBytes = DownloadItem.UNKNOWN_LENGTH)),
+            downloadDirectory
+        )
+
+        // Callers fall back to file counts rather than showing a wrong total.
+        assertEquals(0L, batch.totalBytes)
+    }
+
+    @Test
+    fun retryKeepsCompletedWorkAndClearsTheFailure() {
+        var batch = plan()
+        batch = batch.withItem(
+            batch.items[0].copy(state = DownloadItemState.COMPLETE, bytesWritten = 4096)
+        )
+        batch = AssetDownloadPlanner.applyResult(
+            batch, TransferFailed(batch.items[1], "The server answered 500.", terminal = true)
+        )
+        assertTrue(AssetDownloadPlanner.outcomeOf(batch) is BatchFailed)
+
+        val retried = AssetDownloadPlanner.retry(batch)
+
+        // Retry must cost the user only what is actually outstanding.
+        assertEquals(DownloadItemState.COMPLETE, retried.items[0].state)
+        assertEquals(4096L, retried.items[0].bytesWritten)
+        assertEquals(DownloadItemState.PENDING, retried.items[1].state)
+        assertNull(retried.items[1].error)
+        assertEquals(0, retried.items[1].attempts)
+        assertEquals("debian-rootfs.tar.gz-v7.7.9", AssetDownloadPlanner.nextPending(retried)!!.id)
+        assertEquals(BatchProgress(1, 2, 4096, 12288), AssetDownloadPlanner.outcomeOf(retried))
+    }
+
+    @Test
+    fun retryPreservesPartialBytesOfTheFailedItem() {
+        var batch = plan()
+        batch = AssetDownloadPlanner.applyResult(
+            batch,
+            TransferFailed(
+                batch.items[0].copy(bytesWritten = 1500), "interrupted", terminal = true
+            )
+        )
+
+        val retried = AssetDownloadPlanner.retry(batch)
+
+        // The part file is still on disk, so the resume offset must survive.
+        assertEquals(1500L, retried.items[0].bytesWritten)
+        assertEquals(DownloadItemState.PENDING, retried.items[0].state)
+    }
+
+    @Test
+    fun retryOnASucceededBatchLeavesItComplete() {
+        var batch = plan()
+        batch.items.forEach {
+            batch = batch.withItem(it.copy(state = DownloadItemState.COMPLETE))
+        }
+
+        val retried = AssetDownloadPlanner.retry(batch)
+
+        assertEquals(DownloadBatchState.COMPLETE, retried.state)
+        assertNull(AssetDownloadPlanner.nextPending(retried))
     }
 
     @Test
