@@ -548,13 +548,16 @@ wait_for_condition "every payload to download and verify" "$SETUP_TIMEOUT_SECOND
   downloads_are_complete
 assert_no_forbidden_signatures
 assert_payload_digests_match_lock
+# Checked here, while the download directory still exists. After extraction the
+# app has cleared it, so a part file left behind could never be observed and the
+# assertion would pass for the wrong reason.
+assert_no_pending_transfers
 
 wait_for_condition "the filesystem to finish extracting" "$SETUP_TIMEOUT_SECONDS" \
   extraction_succeeded
 
 assert_no_forbidden_signatures
 assert_filesystem_anchors
-assert_no_pending_transfers
 assert_session_is_ready
 adb exec-out screencap -p > "$EVIDENCE_DIR/setup-complete.png" 2>/dev/null || true
 
