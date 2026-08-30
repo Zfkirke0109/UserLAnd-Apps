@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -lt 4 || $# -gt 5 ]]; then
-  echo "usage: $0 PACKAGE_ID OLD_APK NEW_APK EVIDENCE_DIR [EXPECTED_VERSION_NAME]" >&2
+if [[ $# -lt 4 || $# -gt 6 ]]; then
+  echo "usage: $0 PACKAGE_ID OLD_APK NEW_APK EVIDENCE_DIR [VERSION_NAME] [API_LEVEL]" >&2
   exit 2
 fi
 
@@ -10,8 +10,28 @@ PACKAGE_ID=$1
 OLD_APK=$2
 NEW_APK=$3
 EVIDENCE_DIR=$4
-EXPECTED_VERSION_NAME=${5:-2026.08.29-r2}
+EXPECTED_VERSION_NAME=${5:-2026.08.29-r3}
 EXPECTED_CERTIFICATE='82:9A:55:6F:C5:8A:D5:24:9B:5D:4C:4A:7F:CB:9A:96:9C:FF:38:26:AA:5C:7E:41:02:C3:13:B2:20:A4:5F:EC'
+API_LEVEL=${6:-${ANDROID_API_LEVEL:-35}}
+
+REPOSITORY_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+PAYLOAD_LOCK=${PAYLOAD_LOCK:-$REPOSITORY_ROOT/payloads.lock.json}
+# The emulator matrix is x86_64, so that is the ABI whose payloads are pinned.
+DEVICE_ABI=${DEVICE_ABI:-x86_64}
+APP_FILES="/data/user/0/$PACKAGE_ID/files"
+
+# A first run downloads a whole root filesystem, so the budget is generous; the
+# waits below are driven by conditions, never by sleeping for the whole of it.
+SETUP_TIMEOUT_SECONDS=${SETUP_TIMEOUT_SECONDS:-1800}
+POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-5}
+DIALOG_SETTLE_SECONDS=${DIALOG_SETTLE_SECONDS:-3}
+NETWORK_OUTAGE_SECONDS=${NETWORK_OUTAGE_SECONDS:-10}
+RELAUNCH_SETTLE_SECONDS=${RELAUNCH_SETTLE_SECONDS:-20}
+STABILITY_WINDOW_SECONDS=${STABILITY_WINDOW_SECONDS:-20}
+
+note() {
+  printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"
+}
 mkdir -p "$EVIDENCE_DIR"
 
 fail() {
@@ -26,6 +46,14 @@ capture_evidence() {
   adb shell dumpsys window windows > "$EVIDENCE_DIR/window.txt" 2>&1 || true
   adb shell dumpsys package "$PACKAGE_ID" \
     > "$EVIDENCE_DIR/final-package.txt" 2>&1 || true
+  adb shell dumpsys activity services "$PACKAGE_ID" \
+    > "$EVIDENCE_DIR/services.txt" 2>&1 || true
+  adb shell dumpsys notification --noredact \
+    > "$EVIDENCE_DIR/notifications.txt" 2>&1 || true
+  adb shell cat "$APP_FILES/downloads/download-journal.json" \
+    > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
+  adb shell find "$APP_FILES" -maxdepth 3 \
+    > "$EVIDENCE_DIR/app-files-tree.txt" 2>/dev/null || true
   adb shell cmd appops get "$PACKAGE_ID" \
     > "$EVIDENCE_DIR/appops.txt" 2>&1 || true
   aapt dump permissions "$NEW_APK" \
@@ -81,7 +109,7 @@ wait_for_userland_activity() {
 assert_stable_process() {
   local expected_pid=$1
   : > "$EVIDENCE_DIR/pid-stability.txt"
-  for stable_second in $(seq 1 20); do
+  for stable_second in $(seq 1 "$STABILITY_WINDOW_SECONDS"); do
     current_pid=$(read_package_pid)
     printf '%s %s\n' "$stable_second" "$current_pid" \
       >> "$EVIDENCE_DIR/pid-stability.txt"
@@ -225,7 +253,7 @@ new_name=$(read_version_name <<< "$new_dump")
   fail "upgrade versionCode did not increase: $old_version -> $new_version"
 [[ $new_name == "$EXPECTED_VERSION_NAME" ]] ||
   fail "versionName mismatch: $new_name != $EXPECTED_VERSION_NAME"
-[[ $new_name == *r2 ]] || fail "versionName does not end in r2"
+[[ $new_name == *r3 ]] || fail "versionName does not end in r3"
 assert_apk_contract
 
 launcher=$(adb shell cmd package resolve-activity \
@@ -275,5 +303,245 @@ assert_no_app_crash
 sleep 2
 assert_no_app_crash
 
-printf 'Runtime verified for %s: %s -> %s (%s)\n' \
-  "$PACKAGE_ID" "$old_version" "$new_version" "$new_name"
+
+# ---------------------------------------------------------------- conditions
+
+# Polls a condition instead of sleeping for a fixed download duration, and says
+# so once a minute; a first run is long and a silent job looks hung.
+wait_for_condition() {
+  local description=$1 timeout=$2
+  shift 2
+  local waited=0
+  while (( waited < timeout )); do
+    if "$@"; then
+      note "satisfied after ${waited}s: $description"
+      return 0
+    fi
+    sleep "$POLL_INTERVAL_SECONDS"
+    waited=$(( waited + POLL_INTERVAL_SECONDS ))
+    if (( waited % 60 < POLL_INTERVAL_SECONDS )); then
+      note "still waiting (${waited}s of ${timeout}s): $description"
+      assert_no_forbidden_signatures
+    fi
+  done
+  fail "timed out after ${timeout}s waiting for: $description"
+}
+
+# Signatures that mean the run is already lost. Checked while waiting, so a
+# crashed setup fails in seconds rather than at the end of the timeout.
+assert_no_forbidden_signatures() {
+  local log="$EVIDENCE_DIR/logcat-scan.txt"
+  adb logcat -d > "$log" 2>&1 || true
+  python3 "$REPOSITORY_ROOT/tools/assert_no_app_crash.py" "$PACKAGE_ID" "$log" \
+    > "$EVIDENCE_DIR/crash-scan.txt" 2>&1 \
+    || fail "app-scoped fatal, ANR or force-finish detected"
+
+  local forbidden
+  forbidden=$(grep -nE \
+    'CANNOT LINK EXECUTABLE|library ".*" not found|addNonRootUser\.sh: not found|IncorrectSessionTransition' \
+    "$log" || true)
+  if [[ -n $forbidden ]]; then
+    printf '%s\n' "$forbidden" > "$EVIDENCE_DIR/forbidden-signatures.txt"
+    fail "forbidden runtime signature: $(head -1 <<< "$forbidden")"
+  fi
+}
+
+device_file_exists() {
+  [[ $(adb shell "test -e '$1' && echo yes" 2>/dev/null | tr -d '\r') == yes ]]
+}
+
+# ------------------------------------------------------------------ first run
+
+journal_batch_state() {
+  adb shell cat "$APP_FILES/downloads/download-journal.json" 2>/dev/null \
+    | python3 -c 'import json,sys
+try:
+    print(json.load(sys.stdin).get("state", ""))
+except Exception:
+    print("")' 2>/dev/null || true
+}
+
+downloads_are_complete() {
+  [[ $(journal_batch_state) == COMPLETE ]]
+}
+
+extraction_succeeded() {
+  [[ -n $(adb shell find "$APP_FILES" -name '.success_filesystem_extraction' -print -quit 2>/dev/null | tr -d '\r') ]]
+}
+
+# Every success marker must sit beside a filesystem that actually works. This is
+# the r2 failure: a marker written over a filesystem that was never extracted.
+assert_filesystem_anchors() {
+  adb shell find "$APP_FILES" -name '.success_filesystem_extraction' 2>/dev/null \
+    | tr -d '\r' > "$EVIDENCE_DIR/success-markers.txt"
+  [[ -s "$EVIDENCE_DIR/success-markers.txt" ]] || fail "no extraction success marker was written"
+
+  while read -r marker; do
+    [[ -n $marker ]] || continue
+    local support root
+    support=$(dirname "$marker")
+    root=$(dirname "$support")
+    device_file_exists "$root/bin/sh" || fail "success marker without $root/bin/sh"
+    device_file_exists "$root/etc/passwd" || fail "success marker without $root/etc/passwd"
+    for anchor in nosudo userland_profile.sh ld.so.preload; do
+      device_file_exists "$support/$anchor" || fail "success marker without support/$anchor"
+    done
+    note "filesystem anchors verified under $root"
+  done < "$EVIDENCE_DIR/success-markers.txt"
+}
+
+assert_no_pending_transfers() {
+  local pending
+  pending=$(adb shell find "$APP_FILES" -name '*.part' -print 2>/dev/null | tr -d '\r')
+  if [[ -n $pending ]]; then
+    printf '%s\n' "$pending" > "$EVIDENCE_DIR/pending-parts.txt"
+    fail "setup reported success with unfinished transfers: $pending"
+  fi
+}
+
+# The journal records the digest each payload was verified against. Comparing it
+# to the lock proves the bytes on the device are the bytes the release pinned.
+assert_payload_digests_match_lock() {
+  adb shell cat "$APP_FILES/downloads/download-journal.json" \
+    > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
+  python3 "$REPOSITORY_ROOT/tools/assert_payload_digests.py" \
+    --package "$PACKAGE_ID" \
+    --abi "$DEVICE_ABI" \
+    --lock "$PAYLOAD_LOCK" \
+    --journal "$EVIDENCE_DIR/download-journal.json" \
+    > "$EVIDENCE_DIR/payload-digest-report.txt" \
+    || fail "downloaded payload digests do not match the release lock"
+  note "payload digests match the release lock"
+}
+
+assert_session_is_ready() {
+  adb shell dumpsys activity services "$PACKAGE_ID" \
+    > "$EVIDENCE_DIR/services.txt" 2>&1 || true
+  grep -q "ServiceRecord" "$EVIDENCE_DIR/services.txt" \
+    || fail "no service record for $PACKAGE_ID after setup"
+  grep -qE 'ServerService|AssetDownloadService' "$EVIDENCE_DIR/services.txt" \
+    || fail "neither the session nor the download service ever ran"
+  note "session service verified"
+}
+
+# Proves the transfer resumes rather than restarting: drop the network once
+# mid-download and bring it back.
+interrupt_network_once() {
+  note "interrupting network to prove the transfer resumes"
+  adb shell svc data disable >/dev/null 2>&1 || true
+  adb shell svc wifi disable >/dev/null 2>&1 || true
+  sleep "$NETWORK_OUTAGE_SECONDS"
+  adb shell svc data enable >/dev/null 2>&1 || true
+  adb shell svc wifi enable >/dev/null 2>&1 || true
+  note "network restored"
+}
+
+# --------------------------------------------------------------- first-run ui
+
+node_center() {
+  local ui=$1
+  shift
+  python3 "$REPOSITORY_ROOT/tools/find_ui_node.py" "$ui" "$@"
+}
+
+tap_node() {
+  local coordinates=$1
+  local tap_x tap_y
+  read -r tap_x tap_y <<< "$coordinates"
+  adb shell input tap "$tap_x" "$tap_y"
+}
+
+# Dismisses whatever consent or credential dialog is on screen, if any.
+tap_any_positive_dialog() {
+  local ui="$EVIDENCE_DIR/dialog.xml"
+  dump_ui "$ui"
+  local coordinates
+  coordinates=$(node_center "$ui" --resource-suffix ':id/button1' \
+    --text OK --text Continue --text Yes --text Allow --text Start 2>/dev/null || true)
+  if [[ -n $coordinates ]]; then
+    tap_node "$coordinates"
+    return 0
+  fi
+  return 1
+}
+
+start_setup_from_ui() {
+  local ui=$1
+  local coordinates
+  coordinates=$(node_center "$ui" --package "$PACKAGE_ID" --first-clickable) \
+    || fail "no clickable entry point in the app UI"
+  note "starting setup from the app list"
+  tap_node "$coordinates"
+
+  # Consent, credentials and large-download prompts vary per app and per API, so
+  # clear whatever appears rather than assuming a fixed sequence.
+  local attempt
+  for attempt in $(seq 1 8); do
+    sleep "$DIALOG_SETTLE_SECONDS"
+    tap_any_positive_dialog || true
+    if [[ -n $(journal_batch_state) ]]; then
+      note "setup started (download batch journalled)"
+      return 0
+    fi
+  done
+  note "no download batch appeared yet; continuing to wait by condition"
+}
+
+# ================================================================ first run
+# Everything above proved the r2 upgrade and permission path. What follows is
+# the path r2 never covered: a genuine clean install that has to download,
+# verify, extract, and reach a usable session.
+
+adb root >/dev/null 2>&1 || true
+adb wait-for-device
+# Without root the gate cannot read the app's private files, and an extraction
+# it cannot inspect is an extraction it cannot vouch for.
+[[ $(adb shell id -u 2>/dev/null | tr -d '\r') == 0 ]] \
+  || fail "adb root unavailable; this gate cannot verify the app filesystem"
+
+note "clearing app data for a clean first run"
+adb shell pm clear "$PACKAGE_ID" >/dev/null
+adb shell pm grant "$PACKAGE_ID" android.permission.POST_NOTIFICATIONS >/dev/null 2>&1 || true
+adb shell appops set --uid "$PACKAGE_ID" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
+if [[ $PACKAGE_ID == tech.ula.andacious ]]; then
+  adb shell pm grant "$PACKAGE_ID" android.permission.RECORD_AUDIO >/dev/null 2>&1 || true
+fi
+
+adb logcat -c
+adb shell am start -W -n "$launcher" > "$EVIDENCE_DIR/first-run-launch.txt"
+wait_for_userland_activity
+assert_no_forbidden_signatures
+
+dump_ui "$EVIDENCE_DIR/first-run-ui.xml"
+start_setup_from_ui "$EVIDENCE_DIR/first-run-ui.xml"
+
+interrupt_network_once
+
+wait_for_condition "every payload to download and verify" "$SETUP_TIMEOUT_SECONDS" \
+  downloads_are_complete
+assert_no_forbidden_signatures
+assert_payload_digests_match_lock
+
+wait_for_condition "the filesystem to finish extracting" "$SETUP_TIMEOUT_SECONDS" \
+  extraction_succeeded
+
+assert_no_forbidden_signatures
+assert_filesystem_anchors
+assert_no_pending_transfers
+assert_session_is_ready
+adb exec-out screencap -p > "$EVIDENCE_DIR/setup-complete.png" 2>/dev/null || true
+
+note "relaunching to prove the finished filesystem is reused"
+adb shell am force-stop "$PACKAGE_ID"
+adb logcat -c
+adb shell am start -W -n "$launcher" > "$EVIDENCE_DIR/relaunch.txt"
+wait_for_userland_activity
+sleep "$RELAUNCH_SETTLE_SECONDS"
+assert_no_forbidden_signatures
+assert_filesystem_anchors
+assert_no_pending_transfers
+adb exec-out screencap -p > "$EVIDENCE_DIR/relaunch.png" 2>/dev/null || true
+
+printf 'Runtime verified for %s: %s -> %s (%s) on API %s\n' \
+  "$PACKAGE_ID" "$old_version" "$new_version" "$new_name" "$API_LEVEL" \
+  | tee "$EVIDENCE_DIR/result.txt"

@@ -19,6 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # API 35 is the release target; API 36 is the next platform a user's
+        # device will be on, and a first run has to work on both.
+        api-level: [35, 36]
         app:
           - foxbox
           - andacious
@@ -155,22 +158,23 @@ jobs:
       - name: Run emulator install launch and upgrade check
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}" "${{ steps.meta.outputs.version_name }}"
+          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}-api${{ matrix.api-level }}" "${{ steps.meta.outputs.version_name }}" "${{ matrix.api-level }}"
 
       - name: Upload emulator evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-upgrade-evidence
-          path: evidence/${{ matrix.app }}
+          name: ${{ matrix.app }}-api${{ matrix.api-level }}-evidence
+          path: evidence/${{ matrix.app }}-api${{ matrix.api-level }}
           if-no-files-found: warn
           retention-days: 14
 
       - name: Upload verified signed APK
+        if: matrix.api-level == 35
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app }}-verified-apk
@@ -212,23 +216,41 @@ jobs:
           pattern: '*-upgrade-evidence'
           path: evidence
 
-      - name: Require ten complete runtime evidence bundles
+      - name: Require twenty complete first-run evidence bundles
         shell: bash
         run: |
           set -euo pipefail
           mapfile -t bundles < <(
             find evidence -mindepth 1 -maxdepth 1 -type d \
-              -name '*-upgrade-evidence' -print | sort
+              -name '*-api*-evidence' -print | sort
           )
-          test "${#bundles[@]}" -eq 10
+          # Ten apps on two API levels; a release that ships without one of
+          # them is shipping a first run nobody watched.
+          test "${#bundles[@]}" -eq 20
+          for api in 35 36; do
+            count=$(printf '%s\n' "${bundles[@]}" | grep -c -- "-api$api-evidence")
+            test "$count" -eq 10
+          done
           for bundle in "${bundles[@]}"; do
             for required in \
+              result.txt \
               pid-stability.txt \
               ui.xml \
               permissions.txt \
-              screenshot.png; do
+              screenshot.png \
+              setup-complete.png \
+              relaunch.png \
+              download-journal.json \
+              payload-digest-report.txt \
+              success-markers.txt \
+              services.txt \
+              logcat.txt \
+              crash-buffer.txt; do
               test -s "$bundle/$required"
             done
+            # A bundle that recorded a pending transfer is not a passing run.
+            test ! -s "$bundle/pending-parts.txt"
+            test ! -s "$bundle/forbidden-signatures.txt"
           done
 
       - name: Generate and verify release metadata
