@@ -641,7 +641,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/CreatorSupportPrompter.kt",
       "source": "compat/r3/java/tech/ula/library/utils/CreatorSupportPrompter.kt",
-      "sha256": "69fee1c451c2caa7bdc7c96e56f6a0c8f277d817631652f9a1b17c7e1548a6bd"
+      "sha256": "7e1e16aefa3debd2fe0b06202e4b34189bf182dfde233c7733e04c5b0dfd211c"
     },
     {
       "type": "copy_file",
@@ -694,7 +694,7 @@
       "path": "UserLAndLibrary/app/src/main/res/values/strings.xml",
       "count": 1,
       "old": "    <string name=\"button_repair\">Repair</string>\n",
-      "new": "    <string name=\"button_repair\">Repair</string>\n    <string name=\"about_and_support\">About &amp; Support</string>\n    <string name=\"creator_support_title\">Support the creator</string>\n    <string name=\"creator_support_message\">%1$s is built on the open source UserLAnd project, and this launcher is a rebuild of an app its creator publishes on Google Play. If it is useful to you, the best way to support that work is to buy the official app.</string>\n    <string name=\"creator_support_badge_description\">Get it on Google Play</string>\n"
+      "new": "    <string name=\"button_repair\">Repair</string>\n    <string name=\"about_and_support\">About &amp; Support</string>\n    <string name=\"creator_support_title\">Support the creator</string>\n    <string name=\"creator_support_message\">%1$s is built on the open source UserLAnd project, and this launcher is a rebuild of an app its creator publishes on Google Play as %2$s. If it is useful to you, the best way to support that work is to buy the official app.</string>\n    <string name=\"creator_support_badge_description\">Get it on Google Play</string>\n"
     }
   ]
 }

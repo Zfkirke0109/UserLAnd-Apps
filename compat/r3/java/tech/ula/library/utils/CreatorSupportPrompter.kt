@@ -34,12 +34,17 @@ class CreatorSupportPrompter(private val activity: Activity) {
 
     private fun show() {
         val view = activity.layoutInflater.inflate(R.layout.dia_creator_support, null)
-        // The message names the app, so it is filled in here rather than bound
-        // statically in the layout, which cannot substitute a format argument.
+        // The message names this launcher and the Store listing it credits, so
+        // it is filled in here rather than bound statically in the layout,
+        // which cannot substitute a format argument. The listing title is not
+        // always this launcher's own name -- tech.ula.inkscape is published as
+        // "Inky" -- so naming it here is what stops the badge from looking
+        // like it leads somewhere unrelated.
         view.findViewById<TextView>(R.id.creator_support_message).text =
             activity.getString(
                 R.string.creator_support_message,
-                activity.getString(R.string.app_name)
+                activity.getString(R.string.app_name),
+                activity.getString(R.string.creator_play_title)
             )
         view.findViewById<ImageView>(R.id.creator_support_badge).setOnClickListener {
             openListing(activity.packageName)
