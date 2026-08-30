@@ -156,8 +156,22 @@ def validate_credits(root: Path) -> list[str]:
     return errors
 
 
+def validate_creator_titles(root: Path) -> list[str]:
+    """Every app profile must carry the title recorded in the lock."""
+    from sync_creator_titles import sync
+
+    try:
+        return sync(root, check=True)
+    except (KeyError, OSError, ValueError) as error:
+        return [f"creator titles could not be checked: {error}"]
+
+
 def main() -> int:
-    errors = validate_contract(Path(".")) + validate_credits(Path("."))
+    errors = (
+        validate_contract(Path("."))
+        + validate_credits(Path("."))
+        + validate_creator_titles(Path("."))
+    )
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

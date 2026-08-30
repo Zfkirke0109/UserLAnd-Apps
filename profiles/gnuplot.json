@@ -8,6 +8,17 @@
       "text": "        compileApi = 35\n        targetApi = 35\n        minApi = 21\n        toolsVersion = '30.0.3'\n        versionCode = appVersionCode\n        versionName = appVersionName\n",
       "count": 1
     },
-    {"type": "assert_absent", "path": "build.gradle", "text": "jcenter()"}
+    {
+      "type": "assert_absent",
+      "path": "build.gradle",
+      "text": "jcenter()"
+    },
+    {
+      "type": "insert_after",
+      "path": "CustomLibrary/build.gradle",
+      "anchor": "        resValue \"string\", \"clear_support_files_enabled\", \"false\"\n",
+      "text": "        resValue \"string\", \"creator_play_title\", \"gnuplot\"\n",
+      "count": 1
+    }
   ]
 }
