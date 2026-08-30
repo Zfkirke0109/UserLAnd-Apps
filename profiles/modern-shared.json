@@ -511,6 +511,125 @@
       "old": "        unregisterReceiver(downloadBroadcastReceiver)\n",
       "new": "        assetDownloadRegistration?.cancel()\n        assetDownloadRegistration = null\n",
       "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "data class DownloadingAssets(val numCompleted: Int, val numTotal: Int) : DownloadingAssetsState()\n",
+      "new": "data class DownloadingAssets(\n    val numCompleted: Int,\n    val numTotal: Int,\n    val bytesWritten: Long = 0,\n    val totalBytes: Long = 0\n) : DownloadingAssetsState()\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "data class DownloadsHaveFailed(val reason: DownloadFailureLocalizationData) : DownloadingAssetsState()\n",
+      "new": "data class DownloadsHaveFailed(\n    val reason: DownloadFailureLocalizationData,\n    val safeMessage: String = \"\",\n    val canRetry: Boolean = true\n) : DownloadingAssetsState()\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "            is CompletedDownloadsUpdate -> {\n                state.postValue(DownloadingAssets(assetDownloadState.numCompleted, assetDownloadState.numTotal))\n            }",
+      "new": "            is CompletedDownloadsUpdate -> {\n                state.postValue(\n                    DownloadingAssets(\n                        assetDownloadState.numCompleted,\n                        assetDownloadState.numTotal,\n                        assetDownloadState.bytesWritten,\n                        assetDownloadState.totalBytes\n                    )\n                )\n            }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "            is AssetDownloadFailure -> state.postValue(DownloadsHaveFailed(assetDownloadState.reason))",
+      "new": "            is AssetDownloadFailure -> state.postValue(\n                DownloadsHaveFailed(\n                    assetDownloadState.reason,\n                    assetDownloadState.safeMessage,\n                    assetDownloadState.canRetry\n                )\n            )"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "object ResetSessionState : SessionStartupEvent()",
+      "new": "object ResetSessionState : SessionStartupEvent()\nobject RetryDownloads : SessionStartupEvent()\ndata class RepairFilesystem(val filesystem: Filesystem) : SessionStartupEvent()"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "count": 1,
+      "old": "data class DownloadProgress(val numComplete: Int, val numTotal: Int) : ProgressBarUpdateState()\n",
+      "new": "data class DownloadProgress(\n    val numComplete: Int,\n    val numTotal: Int,\n    val bytesWritten: Long = 0,\n    val totalBytes: Long = 0\n) : ProgressBarUpdateState()\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "count": 1,
+      "old": "object ActiveSessionsMustBeDeactivated : UserInputRequiredState()\n",
+      "new": "object ActiveSessionsMustBeDeactivated : UserInputRequiredState()\ndata class DownloadRetryRequired(\n    val stage: String,\n    val safeMessage: String,\n    val canRepair: Boolean\n) : UserInputRequiredState()\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "count": 1,
+      "old": "            is DownloadingAssets -> state.postValue(DownloadProgress(newState.numCompleted, newState.numTotal))",
+      "new": "            is DownloadingAssets -> state.postValue(\n                DownloadProgress(\n                    newState.numCompleted,\n                    newState.numTotal,\n                    newState.bytesWritten,\n                    newState.totalBytes\n                )\n            )"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "count": 1,
+      "old": "            is DownloadsHaveFailed -> {\n                postIllegalStateWithLog(DownloadsDidNotCompleteSuccessfully(newState.reason))\n            }",
+      "new": "            is DownloadsHaveFailed -> {\n                state.postValue(\n                    DownloadRetryRequired(\n                        stage = \"download\",\n                        safeMessage = newState.safeMessage,\n                        canRepair = lastSelectedFilesystem != null\n                    )\n                )\n            }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/res/values/strings.xml",
+      "count": 1,
+      "old": "    <string name=\"progress_downloading_out_of\">%1$d out of %2$d complete</string>\n",
+      "new": "    <string name=\"progress_downloading_out_of\">%1$d out of %2$d complete</string>\n    <string name=\"progress_downloading_bytes\">%1$d out of %2$d complete (%3$s of %4$s)</string>\n    <string name=\"download_retry_title\">Setup could not finish</string>\n    <string name=\"download_retry_message\">%1$s\\n\\nYour completed downloads have been kept, so Retry will only fetch what is missing.</string>\n    <string name=\"download_retry_message_generic\">The required files could not be downloaded.</string>\n    <string name=\"button_retry\">Retry</string>\n    <string name=\"button_repair\">Repair</string>\n    <string name=\"download_repair_message\">Repair re-runs the Linux setup for this app. Your files and home folder are kept.</string>\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "            is ResetSessionState -> true\n        }",
+      "new": "            is ResetSessionState -> true\n            is RetryDownloads -> true\n            is RepairFilesystem -> true\n        }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "            is ResetSessionState -> { state.postValue(WaitingForSessionSelection) }",
+      "new": "            is ResetSessionState -> { state.postValue(WaitingForSessionSelection) }\n            is RetryDownloads -> { handleRetryDownloads() }\n            is RepairFilesystem -> { handleRepairFilesystem(event.filesystem) }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "count": 1,
+      "old": "    private fun handleSyncDownloadState() {",
+      "new": "    private fun handleRetryDownloads() {\n        if (!assetDownloader.retryDownloads()) {\n            state.postValue(WaitingForSessionSelection)\n            return\n        }\n        handleAssetDownloadState(assetDownloader.syncStateWithCache())\n    }\n\n    private fun handleRepairFilesystem(filesystem: Filesystem) {\n        // Bounded: this clears the extraction markers only. Extraction then unpacks\n        // over the existing tree, so user data and verified payloads are preserved.\n        filesystemManager.invalidateExtraction(\"${filesystem.id}\")\n        state.postValue(StorageVerificationCompletedSuccessfully)\n    }\n\n    private fun handleSyncDownloadState() {"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/viewmodel/MainActivityViewModel.kt",
+      "count": 1,
+      "old": "    fun submitCompletedDownloadId(id: Long) {",
+      "new": "    fun retryDownloads() {\n        submitSessionStartupEvent(RetryDownloads)\n    }\n\n    fun repairFilesystem() {\n        val filesystem = lastSelectedFilesystem\n        if (filesystem == null) {\n            postIllegalStateWithLog(NoFilesystemSelectedWhenCredentialsSubmitted)\n            return\n        }\n        submitSessionStartupEvent(RepairFilesystem(filesystem))\n    }\n\n    /** Cancel: keep every verified payload, and return the user to selection. */\n    fun cancelSetup() {\n        submitSessionStartupEvent(ResetSessionState)\n    }\n\n    fun submitCompletedDownloadId(id: Long) {"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "            is DownloadProgress -> {\n                val step = getString(R.string.progress_downloading)\n                val details = getString(\n                    R.string.progress_downloading_out_of,\n                    state.numComplete,\n                    state.numTotal\n                )\n                updateProgressBar(step, details)\n            }",
+      "new": "            is DownloadProgress -> {\n                val step = getString(R.string.progress_downloading)\n                val details = if (state.totalBytes > 0) {\n                    getString(\n                        R.string.progress_downloading_bytes,\n                        state.numComplete,\n                        state.numTotal,\n                        android.text.format.Formatter.formatShortFileSize(this, state.bytesWritten),\n                        android.text.format.Formatter.formatShortFileSize(this, state.totalBytes)\n                    )\n                } else {\n                    getString(\n                        R.string.progress_downloading_out_of,\n                        state.numComplete,\n                        state.numTotal\n                    )\n                }\n                updateProgressBar(step, details)\n            }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "    private fun handleUserInputState(state: UserInputRequiredState) {\n        return when (state) {\n            is LowStorageAcknowledgementRequired -> {\n                displayLowStorageDialog()\n            }",
+      "new": "    private fun handleUserInputState(state: UserInputRequiredState) {\n        return when (state) {\n            is DownloadRetryRequired -> {\n                displayDownloadRetryDialog(state)\n            }\n            is LowStorageAcknowledgementRequired -> {\n                displayLowStorageDialog()\n            }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "    private fun handleIllegalState(state: IllegalState) {",
+      "new": "    private fun displayDownloadRetryDialog(state: DownloadRetryRequired) {\n        val reason = state.safeMessage.ifBlank {\n            getString(R.string.download_retry_message_generic)\n        }\n        val builder = AlertDialog.Builder(this)\n            .setTitle(R.string.download_retry_title)\n            .setMessage(getString(R.string.download_retry_message, reason))\n            .setPositiveButton(R.string.button_retry) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.retryDownloads()\n            }\n            // Cancel keeps the verified payloads on disk and returns to selection.\n            .setNegativeButton(R.string.button_cancel) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.cancelSetup()\n            }\n        if (state.canRepair) {\n            builder.setNeutralButton(R.string.button_repair) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.repairFilesystem()\n            }\n        }\n        builder.setCancelable(false).create().show()\n    }\n\n    private fun handleIllegalState(state: IllegalState) {"
     }
   ]
 }

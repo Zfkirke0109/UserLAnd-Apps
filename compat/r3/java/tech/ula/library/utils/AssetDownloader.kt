@@ -17,8 +17,23 @@ sealed class AssetDownloadState
 object CacheSyncAttemptedWhileCacheIsEmpty : AssetDownloadState()
 object NonUserlandDownloadFound : AssetDownloadState()
 object AllDownloadsCompletedSuccessfully : AssetDownloadState()
-data class CompletedDownloadsUpdate(val numCompleted: Int, val numTotal: Int) : AssetDownloadState()
-data class AssetDownloadFailure(val reason: DownloadFailureLocalizationData) : AssetDownloadState()
+data class CompletedDownloadsUpdate(
+    val numCompleted: Int,
+    val numTotal: Int,
+    val bytesWritten: Long = 0,
+    val totalBytes: Long = 0
+) : AssetDownloadState()
+
+/**
+ * A stalled setup the user can act on. [safeMessage] is shown to them, so it
+ * describes the stage rather than quoting a server or a file path; [canRetry] is
+ * false only when retrying cannot possibly help.
+ */
+data class AssetDownloadFailure(
+    val reason: DownloadFailureLocalizationData,
+    val safeMessage: String = "",
+    val canRetry: Boolean = true
+) : AssetDownloadState()
 
 /**
  * Setup downloads, owned by the application rather than the OEM download provider.
@@ -97,16 +112,38 @@ class AssetDownloader(
 
     fun downloadIsForUserland(id: Long): Boolean = journal.read() != null
 
+    /**
+     * Runs the batch again, keeping everything already verified. Returns false when
+     * there is no batch to retry, so the caller can restart setup instead.
+     */
+    fun retryDownloads(): Boolean {
+        val batch = journal.read() ?: return false
+        journal.write(AssetDownloadPlanner.retry(batch))
+        assetPreferences.setDownloadsAreInProgress(inProgress = true)
+        AssetDownloadService.enqueue(context)
+        return true
+    }
+
+    /** Forgets the batch without touching the payloads it already verified. */
+    fun discardBatch() {
+        journal.clear()
+        assetPreferences.setDownloadsAreInProgress(inProgress = false)
+    }
+
     private fun asAssetDownloadState(outcome: BatchOutcome): AssetDownloadState {
         return when (outcome) {
             is BatchIdle -> CacheSyncAttemptedWhileCacheIsEmpty
             is BatchSucceeded -> AllDownloadsCompletedSuccessfully
-            is BatchProgress -> CompletedDownloadsUpdate(outcome.completed, outcome.total)
+            is BatchProgress -> CompletedDownloadsUpdate(
+                outcome.completed, outcome.total, outcome.bytesWritten, outcome.totalBytes
+            )
             is BatchFailed -> AssetDownloadFailure(
                 DownloadFailureLocalizationData(
                     R.string.download_failure_http_error,
                     listOf(outcome.reason)
-                )
+                ),
+                safeMessage = outcome.reason,
+                canRetry = true
             )
         }
     }
