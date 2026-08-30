@@ -8,7 +8,12 @@ import java.io.File
  */
 sealed class BatchOutcome
 object BatchIdle : BatchOutcome()
-data class BatchProgress(val completed: Int, val total: Int) : BatchOutcome()
+data class BatchProgress(
+    val completed: Int,
+    val total: Int,
+    val bytesWritten: Long = 0,
+    val totalBytes: Long = 0
+) : BatchOutcome()
 object BatchSucceeded : BatchOutcome()
 data class BatchFailed(val reason: String, val itemId: String?) : BatchOutcome()
 
@@ -91,7 +96,12 @@ object AssetDownloadPlanner {
             return BatchSucceeded
         }
         if (batch.items.isEmpty()) return BatchSucceeded
-        return BatchProgress(batch.completedCount, batch.totalCount)
+        return BatchProgress(
+            batch.completedCount,
+            batch.totalCount,
+            batch.bytesWritten,
+            batch.totalBytes
+        )
     }
 
     /** The next asset to transfer, or null when the batch needs no more work. */
@@ -111,6 +121,22 @@ object AssetDownloadPlanner {
                 }
         }
         return settle(batch.withItem(updated))
+    }
+
+    /**
+     * Prepares a failed batch to run again. Items that already completed keep their
+     * bytes, so Retry costs the user only what is actually outstanding; the rest are
+     * cleared of the previous attempt's error and its attempt count.
+     */
+    fun retry(batch: DownloadBatch): DownloadBatch {
+        val items = batch.items.map { item ->
+            if (item.state == DownloadItemState.COMPLETE) {
+                item
+            } else {
+                item.copy(attempts = 0, state = DownloadItemState.PENDING, error = null)
+            }
+        }
+        return settle(batch.copy(items = items))
     }
 
     private fun settle(batch: DownloadBatch): DownloadBatch {

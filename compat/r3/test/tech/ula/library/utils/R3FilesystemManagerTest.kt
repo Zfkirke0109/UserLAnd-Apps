@@ -419,6 +419,49 @@ class R3FilesystemManagerTest {
     }
 
     @Test
+    fun invalidatingExtractionRemovesOnlyTheMarkers() {
+        createExtractedFilesystem()
+        successMarker.createNewFile()
+        failureMarker.createNewFile()
+        val userFile = File(userHome, "notes.txt").apply { writeText("keep") }
+        createDownloadedArchive()
+
+        assertTrue(filesystemManager.invalidateExtraction(filesystemId))
+
+        assertFalse(successMarker.exists())
+        assertFalse(failureMarker.exists())
+        // Everything the user could not get back must survive a repair.
+        assertEquals("keep", userFile.readText())
+        assertTrue(File(filesystemRoot, "bin/sh").exists())
+        assertTrue(File(filesystemRoot, "etc/passwd").exists())
+        assertTrue(userHome.isDirectory)
+        assertTrue("a verified payload must not be discarded", archive.exists())
+        listOf("nosudo", "userland_profile.sh", "ld.so.preload").forEach {
+            assertTrue(it, File(supportDirectory, it).exists())
+        }
+    }
+
+    @Test
+    fun invalidatingExtractionMakesTheFilesystemUnusableSoSetupRerunsIt() {
+        createExtractedFilesystem()
+        successMarker.createNewFile()
+        assertTrue(filesystemManager.hasUsableFilesystem(filesystemId, username))
+
+        filesystemManager.invalidateExtraction(filesystemId)
+
+        assertFalse(filesystemManager.hasUsableFilesystem(filesystemId, username))
+        assertFalse(filesystemManager.isExtractionComplete(filesystemId))
+    }
+
+    @Test
+    fun invalidatingAnUntouchedFilesystemReportsNothingToDo() {
+        createExtractedFilesystem()
+
+        assertFalse(filesystemManager.invalidateExtraction(filesystemId))
+        assertTrue(File(filesystemRoot, "bin/sh").exists())
+    }
+
+    @Test
     fun repairClearsAStaleSuccessMarkerBeforeWorkBegins() {
         successMarker.createNewFile()
         createDownloadedArchive()

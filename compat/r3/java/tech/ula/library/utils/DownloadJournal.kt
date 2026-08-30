@@ -56,6 +56,14 @@ data class DownloadBatch(
 
     val totalCount: Int get() = items.size
 
+    /** Bytes already on disk across the batch, for a progress bar that moves. */
+    val bytesWritten: Long get() = items.sumOf { it.bytesWritten }
+
+    /** Zero when any item's length is unknown, so callers can fall back to counts. */
+    val totalBytes: Long
+        get() = if (items.any { it.expectedBytes == DownloadItem.UNKNOWN_LENGTH }) 0
+        else items.sumOf { it.expectedBytes }
+
     fun withItem(updated: DownloadItem): DownloadBatch {
         return copy(items = items.map { if (it.id == updated.id) updated else it })
     }

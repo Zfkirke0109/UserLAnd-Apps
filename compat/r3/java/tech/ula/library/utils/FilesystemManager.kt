@@ -194,6 +194,25 @@ class FilesystemManager(
         return hasUsableFilesystem(targetDirectoryName)
     }
 
+    /**
+     * Sends a filesystem back through extraction, and touches nothing else.
+     *
+     * Repair removes only the two extraction markers. It deletes no filesystem
+     * content, no user home, and no downloaded payload, because extraction already
+     * unpacks over the existing tree and preserves what it finds there. A repair
+     * that reached further would be able to destroy exactly the data the user came
+     * back to recover.
+     */
+    fun invalidateExtraction(targetDirectoryName: String): Boolean {
+        val supportPath = getSupportDirectoryPath(targetDirectoryName)
+        val success = File("$supportPath/$filesystemExtractionSuccess")
+        val failure = File("$supportPath/$filesystemExtractionFailure")
+        val removed = success.exists() || failure.exists()
+        success.delete()
+        failure.delete()
+        return removed
+    }
+
     fun areAllRequiredAssetsPresent(
         targetDirectoryName: String,
         distributionAssetList: List<Asset>

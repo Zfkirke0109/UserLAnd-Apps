@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import re
 import tempfile
 import subprocess
 import sys
@@ -665,6 +666,116 @@ class CompatibilityTests(unittest.TestCase):
                 for operation in profile["operations"]
             )
         )
+
+    def test_r3_repair_touches_only_the_extraction_markers(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        body = text.split("fun invalidateExtraction(", 1)[1].split("\n    fun ", 1)[0]
+
+        self.assertIn("success.delete()", body)
+        self.assertIn("failure.delete()", body)
+        # A repair that reached further could destroy the data the user came back
+        # for. Nothing recursive, and nothing outside the two markers.
+        self.assertNotIn("deleteRecursively", body)
+        self.assertNotIn("walkBottomUp", body)
+        for forbidden in ("home", "rootfs", "archive", "filesystemRoot"):
+            self.assertNotIn(forbidden, body, forbidden)
+
+    def test_r3_progress_carries_bytes_not_only_file_counts(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        journal = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        planner_text = planner.read_text(encoding="utf-8")
+        journal_text = journal.read_text(encoding="utf-8")
+
+        # A single 200 MB rootfs makes a file-count bar sit still for minutes.
+        self.assertIn("val bytesWritten: Long", planner_text)
+        self.assertIn("val totalBytes: Long", planner_text)
+        self.assertIn("val bytesWritten: Long get() = items.sumOf { it.bytesWritten }", journal_text)
+        # An unknown length must not render as a wrong total.
+        self.assertIn("expectedBytes == DownloadItem.UNKNOWN_LENGTH }) 0", journal_text)
+
+    def test_r3_retry_resubmits_only_what_is_outstanding(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        text = planner.read_text(encoding="utf-8")
+
+        body = text.split("fun retry(", 1)[1].split("\n    private fun ", 1)[0]
+
+        # Completed items are returned untouched, so Retry costs only the remainder.
+        self.assertIn("if (item.state == DownloadItemState.COMPLETE) {", body)
+        self.assertIn("item\n            } else {", body)
+        self.assertIn("attempts = 0", body)
+        self.assertIn("state = DownloadItemState.PENDING", body)
+        self.assertIn("error = null", body)
+        # The resume offset has to survive; the part file is still on disk.
+        self.assertNotIn("bytesWritten = 0", body)
+
+    def test_r3_download_failure_is_recoverable_not_an_illegal_state(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        operations = profile["operations"]
+
+        # The Github dead-end dialog must no longer be where a stalled setup lands.
+        retired = next(
+            op for op in operations
+            if op.get("type") == "replace"
+            and "postIllegalStateWithLog(DownloadsDidNotCompleteSuccessfully" in op.get("old", "")
+        )
+        self.assertIn("DownloadRetryRequired(", retired["new"])
+        self.assertNotIn("postIllegalStateWithLog", retired["new"])
+
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in operations)
+        for required in (
+            "fun retryDownloads()",
+            "fun repairFilesystem()",
+            "fun cancelSetup()",
+            "displayDownloadRetryDialog(",
+            "R.string.button_retry",
+            "R.string.button_repair",
+            "R.string.button_cancel",
+        ):
+            self.assertIn(required, blob, required)
+
+    def test_r3_recovery_dialog_offers_repair_only_when_it_applies(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        dialog = next(
+            op for op in profile["operations"]
+            if "displayDownloadRetryDialog" in op.get("new", "")
+            and "AlertDialog.Builder" in op.get("new", "")
+        )["new"]
+
+        self.assertIn("if (state.canRepair) {", dialog)
+        # Cancel must not discard payloads the user already paid to download.
+        self.assertIn("viewModel.cancelSetup()", dialog)
+        for destructive in ("delete", "deleteRecursively", "clearSupportFiles"):
+            self.assertNotIn(destructive, dialog, destructive)
+
+    def test_r3_repair_event_uses_the_bounded_invalidation(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        handler = next(
+            op for op in profile["operations"]
+            if "handleRepairFilesystem" in op.get("new", "")
+            and "invalidateExtraction" in op.get("new", "")
+        )["new"]
+
+        self.assertIn('filesystemManager.invalidateExtraction("${filesystem.id}")', handler)
+        # Repair re-runs extraction; it never deletes the filesystem itself.
+        self.assertNotIn("deleteFilesystem", handler)
+        self.assertNotIn("deleteRecursively", handler)
+
+    def test_r3_every_string_the_recovery_ui_references_is_defined(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        added = "".join(
+            op.get("new", "") for op in profile["operations"]
+            if op.get("path", "").endswith("res/values/strings.xml")
+        )
+        defined = set(re.findall(r'<string name="([^"]+)"', added))
+
+        for name in (
+            "progress_downloading_bytes", "download_retry_title",
+            "download_retry_message", "download_retry_message_generic",
+            "button_retry", "button_repair",
+        ):
+            self.assertIn(name, defined, name)
 
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
