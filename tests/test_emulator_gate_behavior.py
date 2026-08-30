@@ -157,6 +157,25 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         ):
             self.assertIn(stage, result.stdout, stage)
 
+    def test_a_journal_cleared_after_staging_still_verifies_digests(self):
+        """The app deletes the journal the moment it stages the downloads.
+
+        Release run 3 failed all twenty jobs here: the gate waited for the
+        journal to read COMPLETE, then read it a second time for the digests
+        and found it emptied. The batch must be captured on the read that
+        observed it, not fetched again afterwards.
+        """
+        self.build_device()
+        result = self.run_gate(clear_journal_after_read=2)
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("payload digests match the release lock", result.stdout)
+        # The captured batch must survive into the evidence, not be overwritten
+        # by the emptied file the device is left holding.
+        captured = self.evidence / "download-journal.json"
+        self.assertTrue(captured.is_file())
+        self.assertIn("COMPLETE", captured.read_text())
+
     # ---------------------------------------------------------------- failing
 
     def test_a_success_marker_without_a_shell_is_rejected(self):

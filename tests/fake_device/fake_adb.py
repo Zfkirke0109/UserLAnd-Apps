@@ -91,7 +91,16 @@ elif argv[:1] == ["shell"]:
         target = device_path(command.split(" ", 1)[1].strip().strip("'\""))
         if not target.exists():
             sys.exit(1)
-        emit(target.read_text())
+        contents = target.read_text()
+        emit(contents)
+        # The real app clears the journal as soon as it stages the downloads.
+        # The gate reads it to confirm setup began, then again while waiting;
+        # this models it disappearing right after the read that observed the
+        # batch complete, which is when the app finishes staging.
+        allowed = scenario.get("clear_journal_after_read")
+        if allowed and target.name == "download-journal.json":
+            if bump("journal-read") >= int(allowed):
+                target.write_text("")
     elif command.startswith("find "):
         match = re.match(r"find (\S+)(?: -maxdepth \d+)?(?: -name '?([^' ]+)'?)?", command)
         base = device_path(match.group(1))
