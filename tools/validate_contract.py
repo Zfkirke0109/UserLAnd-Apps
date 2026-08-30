@@ -139,10 +139,18 @@ def validate_credits(root: Path) -> list[str]:
         if digest != badge.get("sha256"):
             errors.append("badge SHA-256 does not match credits.lock.json")
 
+    if not lock.get("play_listings_verified_on"):
+        errors.append("credits.lock.json records no Play listing verification date")
+
     packages = {app["package_id"] for app in lock.get("apps", [])}
     for app in lock.get("apps", []):
         if not app.get("play_package"):
             errors.append(f"{app.get('id')} has no Play package to link to")
+        # The listing title is recorded because it is not always the launcher's
+        # own name: tech.ula.inkscape is published as "Inky". Someone auditing
+        # where the support button sends a user needs the name they will see.
+        if not app.get("play_title"):
+            errors.append(f"{app.get('id')} has no verified Play listing title")
     if len(packages) != 10:
         errors.append(f"credits cover {len(packages)} packages, expected 10")
     return errors
