@@ -92,6 +92,31 @@ class SupportAssetStagingTests(unittest.TestCase):
                     archive, root / "jniLibs", "arm64-v8a", "v1.5.1"
                 )
 
+    def test_unloadable_optional_webrtc_echo_canceller_is_not_packaged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive = self._archive(
+                root,
+                [
+                    ("proot", b"proot-data"),
+                    ("libwebrtc-util.so", b"missing-dependency"),
+                    ("module-echo-cancel.so", b"depends-on-webrtc-util"),
+                ],
+            )
+            destination = root / "jniLibs"
+
+            staged = self.stage_archive(
+                archive, destination, "arm64-v8a", "v1.5.1"
+            )
+
+            self.assertEqual(
+                ["lib_arch.so", "lib_proot.so"],
+                [path.name for path in staged],
+            )
+            marker = destination.parent / ".support-assets/arm64-v8a.json"
+            self.assertNotIn("webrtc", marker.read_text(encoding="utf-8"))
+            self.assertNotIn("echo-cancel", marker.read_text(encoding="utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # API 35 is the release target; API 36 is the next platform a user's
+        # device will be on, and a first run has to work on both.
+        api-level: [35, 36]
         app:
           - foxbox
           - andacious
@@ -87,7 +90,7 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: scripts/prepare_signing.sh
 
-      - name: Read app and r2 metadata
+      - name: Read app and release metadata
         id: meta
         shell: bash
         run: |
@@ -103,30 +106,33 @@ jobs:
               output.write(f"package={app['package_id']}\n")
               output.write(f"apk={app['output_name']}\n")
               output.write(f"version_name={release['version_name']}\n")
+              output.write(f"release_tag={release['release_tag']}\n")
+              output.write(f"upgrade_from_tag={release['upgrade_from_tag']}\n")
           PY
 
-      - name: Download published rc1 APK and checksum
+      - name: Download the published upgrade baseline APK and checksum
         env:
           GH_TOKEN: ${{ github.token }}
+          BASELINE_TAG: ${{ steps.meta.outputs.upgrade_from_tag }}
         shell: bash
         run: |
           set -euo pipefail
-          rc1_dir="$RUNNER_TEMP/rc1"
-          mkdir -p "$rc1_dir"
-          gh release download v2026.08.29-rc1 \
+          baseline_dir="$RUNNER_TEMP/baseline"
+          mkdir -p "$baseline_dir"
+          gh release download "$BASELINE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --pattern "${{ steps.meta.outputs.apk }}" \
-            --dir "$rc1_dir"
-          gh release download v2026.08.29-rc1 \
+            --dir "$baseline_dir"
+          gh release download "$BASELINE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --pattern SHA256SUMS \
-            --dir "$rc1_dir"
-          grep -F "  ${{ steps.meta.outputs.apk }}" "$rc1_dir/SHA256SUMS" \
-            > "$rc1_dir/expected-sha256"
-          (cd "$rc1_dir" && sha256sum --check expected-sha256)
-          cp "$rc1_dir/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/old.apk"
+            --dir "$baseline_dir"
+          grep -F "  ${{ steps.meta.outputs.apk }}" "$baseline_dir/SHA256SUMS" \
+            > "$baseline_dir/expected-sha256"
+          (cd "$baseline_dir" && sha256sum --check expected-sha256)
+          cp "$baseline_dir/${{ steps.meta.outputs.apk }}" "$RUNNER_TEMP/old.apk"
 
-      - name: Build signed r2 APK
+      - name: Build the signed release APK
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -155,22 +161,23 @@ jobs:
       - name: Run emulator install launch and upgrade check
         uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
         with:
-          api-level: 35
+          api-level: ${{ matrix.api-level }}
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}" "${{ steps.meta.outputs.version_name }}"
+          script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}-api${{ matrix.api-level }}" "${{ steps.meta.outputs.version_name }}" "${{ matrix.api-level }}"
 
       - name: Upload emulator evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-upgrade-evidence
-          path: evidence/${{ matrix.app }}
+          name: ${{ matrix.app }}-api${{ matrix.api-level }}-evidence
+          path: evidence/${{ matrix.app }}-api${{ matrix.api-level }}
           if-no-files-found: warn
           retention-days: 14
 
       - name: Upload verified signed APK
+        if: matrix.api-level == 35
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app }}-verified-apk
@@ -186,10 +193,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    env:
-      RELEASE_TAG: v2026.08.29-r2
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read the release tag from the lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$GITHUB_ENV" <<'PY'
+          import json
+          import sys
+
+          release = json.load(open("release.lock.json", encoding="utf-8"))
+          with open(sys.argv[1], "a", encoding="utf-8") as output:
+              output.write(f"RELEASE_TAG={release['release_tag']}\n")
+          PY
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -209,26 +227,44 @@ jobs:
       - name: Download all runtime evidence
         uses: actions/download-artifact@v4
         with:
-          pattern: '*-upgrade-evidence'
+          pattern: '*-api*-evidence'
           path: evidence
 
-      - name: Require ten complete runtime evidence bundles
+      - name: Require twenty complete first-run evidence bundles
         shell: bash
         run: |
           set -euo pipefail
           mapfile -t bundles < <(
             find evidence -mindepth 1 -maxdepth 1 -type d \
-              -name '*-upgrade-evidence' -print | sort
+              -name '*-api*-evidence' -print | sort
           )
-          test "${#bundles[@]}" -eq 10
+          # Ten apps on two API levels; a release that ships without one of
+          # them is shipping a first run nobody watched.
+          test "${#bundles[@]}" -eq 20
+          for api in 35 36; do
+            count=$(printf '%s\n' "${bundles[@]}" | grep -c -- "-api$api-evidence")
+            test "$count" -eq 10
+          done
           for bundle in "${bundles[@]}"; do
             for required in \
+              result.txt \
               pid-stability.txt \
               ui.xml \
               permissions.txt \
-              screenshot.png; do
+              screenshot.png \
+              setup-complete.png \
+              relaunch.png \
+              download-journal.json \
+              payload-digest-report.txt \
+              success-markers.txt \
+              services.txt \
+              logcat.txt \
+              crash-buffer.txt; do
               test -s "$bundle/$required"
             done
+            # A bundle that recorded a pending transfer is not a passing run.
+            test ! -s "$bundle/pending-parts.txt"
+            test ! -s "$bundle/forbidden-signatures.txt"
           done
 
       - name: Generate and verify release metadata
@@ -242,7 +278,7 @@ jobs:
             --dependencies-lock dependencies.lock.json \
             --release-lock release.lock.json
 
-      - name: Tag verified commit and publish r2
+      - name: Tag the verified commit and publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash

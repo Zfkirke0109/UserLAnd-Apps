@@ -10,6 +10,14 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 SUPPORTED_ABIS = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"}
+EXCLUDED_SUPPORT_MEMBERS = {
+    # The v1.5.1 archive includes PulseAudio's optional echo canceller without
+    # its libwebrtc-audio-processing dependency. Neither file is loaded by the
+    # shipped default.pa, so omit the unusable pair instead of packaging a
+    # knowingly broken ELF closure.
+    "libwebrtc-util.so",
+    "module-echo-cancel.so",
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -61,6 +69,8 @@ def stage_archive(
             staging = Path(directory) / abi
             staging.mkdir()
             for member in members:
+                if PurePosixPath(member.filename).name in EXCLUDED_SUPPORT_MEMBERS:
+                    continue
                 target = staging / f"lib_{PurePosixPath(member.filename).name}.so"
                 with source.open(member) as input_file, target.open("wb") as output_file:
                     shutil.copyfileobj(input_file, output_file)

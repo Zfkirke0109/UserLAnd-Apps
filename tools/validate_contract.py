@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import hashlib
 import json
 import re
 import sys
@@ -89,10 +90,10 @@ def validate_contract(root: Path) -> list[str]:
         errors.append("support asset ABI/checksum set is invalid")
     if release.get("schema_version") != 1:
         errors.append("release schema_version must be 1")
-    if release.get("release_tag") != "v2026.08.29-r2":
-        errors.append("release tag must be v2026.08.29-r2")
-    if release.get("version_name") != "2026.08.29-r2":
-        errors.append("release version_name must be 2026.08.29-r2")
+    if release.get("release_tag") != "v2026.08.29-r3":
+        errors.append("release tag must be v2026.08.29-r3")
+    if release.get("version_name") != "2026.08.29-r3":
+        errors.append("release version_name must be 2026.08.29-r3")
     version_code = release.get("version_code")
     old_version_code = release.get("upgrade_from_version_code")
     if not isinstance(version_code, int) or not 2_000_000_000 <= version_code <= 2_100_000_000:
@@ -101,8 +102,10 @@ def validate_contract(root: Path) -> list[str]:
         isinstance(version_code, int) and version_code <= old_version_code
     ):
         errors.append("release version_code must exceed upgrade version_code")
-    if release.get("upgrade_from_tag") != "v2026.08.29-rc1":
-        errors.append("upgrade_from_tag must be v2026.08.29-rc1")
+    if release.get("upgrade_from_tag") != "v2026.08.29-r2":
+        errors.append("upgrade_from_tag must be v2026.08.29-r2")
+    if old_version_code != 2003329000:
+        errors.append("upgrade_from_version_code must be 2003329000")
     foxbox = next((app for app in apps if app.get("id") == "foxbox"), None)
     if foxbox is None or foxbox.get("source_ref") != (
         "7f08dcf54fcae40bb96fd20e1c057c8ac89c2fde"
@@ -111,8 +114,64 @@ def validate_contract(root: Path) -> list[str]:
     return errors
 
 
+def validate_credits(root: Path) -> list[str]:
+    """The bundled Play badge must be Google's asset, byte for byte."""
+    errors: list[str] = []
+    lock_path = root / "credits.lock.json"
+    if not lock_path.is_file():
+        return ["credits.lock.json is missing"]
+    try:
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"credits.lock.json is unreadable: {error}"]
+
+    badge = lock.get("badge", {})
+    badge_path = root / badge.get("path", "")
+    if not badge_path.is_file():
+        errors.append(f"badge is missing: {badge.get('path')}")
+    else:
+        data = badge_path.read_bytes()
+        if len(data) != badge.get("size"):
+            errors.append(
+                f"badge is {len(data)} bytes, locked at {badge.get('size')}"
+            )
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != badge.get("sha256"):
+            errors.append("badge SHA-256 does not match credits.lock.json")
+
+    if not lock.get("play_listings_verified_on"):
+        errors.append("credits.lock.json records no Play listing verification date")
+
+    packages = {app["package_id"] for app in lock.get("apps", [])}
+    for app in lock.get("apps", []):
+        if not app.get("play_package"):
+            errors.append(f"{app.get('id')} has no Play package to link to")
+        # The listing title is recorded because it is not always the launcher's
+        # own name: tech.ula.inkscape is published as "Inky". Someone auditing
+        # where the support button sends a user needs the name they will see.
+        if not app.get("play_title"):
+            errors.append(f"{app.get('id')} has no verified Play listing title")
+    if len(packages) != 10:
+        errors.append(f"credits cover {len(packages)} packages, expected 10")
+    return errors
+
+
+def validate_creator_titles(root: Path) -> list[str]:
+    """Every app profile must carry the title recorded in the lock."""
+    from sync_creator_titles import sync
+
+    try:
+        return sync(root, check=True)
+    except (KeyError, OSError, ValueError) as error:
+        return [f"creator titles could not be checked: {error}"]
+
+
 def main() -> int:
-    errors = validate_contract(Path("."))
+    errors = (
+        validate_contract(Path("."))
+        + validate_credits(Path("."))
+        + validate_creator_titles(Path("."))
+    )
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

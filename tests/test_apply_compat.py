@@ -1,6 +1,7 @@
 import hashlib
 import inspect
 import json
+import re
 import tempfile
 import subprocess
 import sys
@@ -94,6 +95,118 @@ class CompatibilityTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "asset escapes directory"):
                 apply_profile(root, profile, assets_root=assets)
 
+    def test_copy_file_creates_exact_asset_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            source = assets / "compat/r3/NewRuntime.kt"
+            root.mkdir()
+            source.parent.mkdir(parents=True)
+            source.write_text("package example\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                    }
+                ]
+            }
+
+            changed = apply_profile(root, profile, assets_root=assets)
+
+            target = root / "src/NewRuntime.kt"
+            self.assertEqual(["src/NewRuntime.kt"], changed)
+            self.assertEqual(b"package example\n", target.read_bytes())
+            self.assertEqual([], apply_profile(root, profile, assets_root=assets))
+
+    def test_copy_file_rejects_source_or_destination_escape(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            root.mkdir()
+            assets.mkdir()
+            outside = base / "outside.kt"
+            outside.write_text("outside\n", encoding="utf-8")
+            digest = hashlib.sha256(outside.read_bytes()).hexdigest()
+
+            cases = (
+                ("src/NewRuntime.kt", "../outside.kt"),
+                ("../outside-target.kt", "inside.kt"),
+            )
+            (assets / "inside.kt").write_text("outside\n", encoding="utf-8")
+            for target, source in cases:
+                with self.subTest(target=target, source=source):
+                    profile = {
+                        "operations": [
+                            {
+                                "type": "copy_file",
+                                "path": target,
+                                "source": source,
+                                "sha256": digest,
+                            }
+                        ]
+                    }
+                    with self.assertRaisesRegex(ValueError, "escapes"):
+                        apply_profile(root, profile, assets_root=assets)
+
+    def test_copy_file_rejects_conflicting_existing_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            target = root / "src/NewRuntime.kt"
+            source = assets / "compat/r3/NewRuntime.kt"
+            target.parent.mkdir(parents=True)
+            source.parent.mkdir(parents=True)
+            target.write_text("user bytes\n", encoding="utf-8")
+            source.write_text("r3 bytes\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                    }
+                ]
+            }
+
+            with self.assertRaisesRegex(
+                ValueError, "target already exists with different bytes"
+            ):
+                apply_profile(root, profile, assets_root=assets)
+
+            self.assertEqual("user bytes\n", target.read_text(encoding="utf-8"))
+
+    def test_copy_file_rejects_source_hash_mismatch_before_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "workspace"
+            assets = base / "assets"
+            source = assets / "compat/r3/NewRuntime.kt"
+            root.mkdir()
+            source.parent.mkdir(parents=True)
+            source.write_text("r3 bytes\n", encoding="utf-8")
+            profile = {
+                "operations": [
+                    {
+                        "type": "copy_file",
+                        "path": "src/NewRuntime.kt",
+                        "source": "compat/r3/NewRuntime.kt",
+                        "sha256": "0" * 64,
+                    }
+                ]
+            }
+
+            with self.assertRaisesRegex(ValueError, "source SHA-256 mismatch"):
+                apply_profile(root, profile, assets_root=assets)
+
+            self.assertFalse((root / "src/NewRuntime.kt").exists())
+
     def test_r2_permission_handler_uses_api_and_feature_appropriate_access(self):
         overlay = Path("compat/r2/PermissionHandler.kt")
         self.assertTrue(overlay.is_file(), "r2 permission handler must exist")
@@ -124,6 +237,608 @@ class CompatibilityTests(unittest.TestCase):
                 and operation.get("source") == "compat/r2/PermissionHandler.kt"
                 and operation.get("old_sha256")
                 == "b4f0cc790ad2faadc8317a67515fd56defd4a3b08b218f80d6f674617ef60400"
+                for operation in profile["operations"]
+            )
+        )
+
+    def test_r3_profile_replaces_busybox_executor_and_copies_behavior_test(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        operations = profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "replace_file"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/BusyboxExecutor.kt"
+                and operation.get("source")
+                == "compat/r3/java/tech/ula/library/utils/BusyboxExecutor.kt"
+                and operation.get("old_sha256")
+                == "a0616c39d47c6f05e5fe50564de00bcac8a2f5d499fbe773c2fe73eacd6dc6c3"
+                for operation in operations
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("path", "").endswith("R3BusyboxExecutorTest.kt")
+                for operation in operations
+            )
+        )
+
+    def test_r3_filesystem_manager_extracts_before_it_trusts_a_success_marker(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        self.assertTrue(overlay.is_file(), "r3 filesystem manager must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            "fun validateRootfsArchive(",
+            "fun hasUsableFilesystem(",
+            'startsWith("/")',
+            'split(\'/\').any { it == ".." }',
+            'runHostApplet(\n            "tar"',
+            '"/support/common/addNonRootUser.sh"',
+            'listOf("bin/sh", "etc/passwd")',
+            'listOf("nosudo", "userland_profile.sh", "ld.so.preload")',
+            "successMarker.delete()",
+            "successMarker.createNewFile()",
+        ):
+            self.assertIn(required, text)
+
+        # The v1.5.1 helper no longer extracts, so the runtime must not delegate to it.
+        self.assertNotIn("extractFilesystem.sh", text)
+        # A failed stage must leave the download in place for Retry.
+        self.assertEqual(1, text.count("archive.delete()"))
+        # An exclusion only matches the stored member name, so both shapes are passed.
+        self.assertIn('listOf("--exclude", it, "--exclude", "./$it")', text)
+
+    def test_r3_archive_validation_rejects_unsafe_members_before_extraction(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        validation = text.split("fun validateRootfsArchive(", 1)[1]
+        validation = validation.split("\n    /**", 1)[0]
+
+        self.assertIn("members.any { it.isUnsafeArchiveMember() }", validation)
+        self.assertIn('runHostApplet(\n            "tar",\n            listOf("-tzf"', validation)
+        # The rejected member name is attacker-controlled and must not be echoed back.
+        self.assertNotIn("$it", validation.split("isUnsafeArchiveMember() }", 1)[1])
+
+        extraction = text.split("suspend fun extractFilesystem(", 1)[1]
+        extraction = extraction.split("suspend fun compressFilesystem(", 1)[0]
+        self.assertLess(
+            extraction.index("validateRootfsArchive(archive)"),
+            extraction.index('runHostApplet(\n            "tar",\n            extractionArguments'),
+        )
+
+    def test_r3_filesystem_manager_verifies_anchors_before_writing_success(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        extraction = text.split("suspend fun extractFilesystem(", 1)[1]
+        extraction = extraction.split("suspend fun compressFilesystem(", 1)[0]
+
+        verification = extraction.index("missingFilesystemAnchor(")
+        for earlier in ("runHostApplet(", "executeProotCommand("):
+            self.assertLess(extraction.index(earlier), verification, earlier)
+        self.assertLess(verification, extraction.index("successMarker.createNewFile()"))
+
+    def test_r3_usable_filesystem_requires_anchors_and_not_only_the_marker(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        body = text.split("fun hasUsableFilesystem(", 1)[1]
+        body = body.split("\n    fun ", 1)[0]
+
+        self.assertIn('$filesystemExtractionSuccess").exists()) return false', body)
+        self.assertIn("missingFilesystemAnchor(targetDirectoryName, username) == null", body)
+        # The r2 predicate returned the marker's existence and nothing else.
+        self.assertNotIn("return true", body)
+
+        delegate = text.split("fun hasFilesystemBeenSuccessfullyExtracted(", 1)[1]
+        delegate = delegate.split("\n    fun ", 1)[0]
+        self.assertIn("hasUsableFilesystem(targetDirectoryName)", delegate)
+        self.assertNotIn("exists()", delegate)
+
+    def test_r3_profile_replaces_filesystem_manager_and_copies_behavior_test(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "replace_file"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/FilesystemManager.kt"
+                and operation.get("source")
+                == "compat/r3/java/tech/ula/library/utils/FilesystemManager.kt"
+                and operation.get("old_sha256")
+                == "e6c88329469c77894f4514e8c5a56a33b270eac32cb2a58653717211d477cee8"
+                for operation in operations
+            )
+        )
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("path", "").endswith("R3FilesystemManagerTest.kt")
+                for operation in operations
+            )
+        )
+
+    def test_r3_profile_retires_the_superseded_upstream_extraction_tests(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        removals = [
+            operation for operation in profile["operations"]
+            if operation.get("type") == "replace"
+            and operation.get("path", "").endswith("FilesystemManagerTest.kt")
+        ]
+
+        self.assertEqual(2, len(removals))
+        # The v1.5.1 command contract and the marker-only success predicate are gone.
+        self.assertTrue(
+            any("/support/common/extractFilesystem.sh" in operation["old"] for operation in removals)
+        )
+        self.assertTrue(
+            any(
+                "filesystemHasOnlyBeenSuccessfullyExtractedIfSuccessStatusFileExists"
+                in operation["old"]
+                for operation in removals
+            )
+        )
+        for operation in removals:
+            self.assertEqual(1, operation.get("count"))
+            self.assertNotIn("@Test", operation["new"])
+
+    def test_r3_transfer_resumes_verifies_and_publishes_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        self.assertTrue(overlay.is_file(), "r3 resumable transfer must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'builder.header("Range", "bytes=$resumeFrom-")',
+            "response.code == HTTP_PARTIAL_CONTENT && resumeFrom > 0",
+            "const val DEFAULT_MAX_ATTEMPTS = 5",
+            "MessageDigest.getInstance(\"SHA-256\")",
+            "output.fd.sync()",
+            "part.renameTo(destination)",
+        ):
+            self.assertIn(required, text)
+
+        # Setup payloads must not go back through the OEM download provider.
+        self.assertNotIn("DownloadManager", text)
+
+    def test_r3_transfer_never_publishes_before_it_verifies(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        consume = text.split("private fun consume(", 1)[1]
+        consume = consume.split("private fun retryable(", 1)[0]
+
+        digest_check = consume.index("if (item.isLocked) {")
+        length_check = consume.index("written != item.expectedBytes")
+        publish = consume.index("publish(part, item.destinationFile)")
+        self.assertLess(length_check, digest_check)
+        self.assertLess(digest_check, publish)
+
+        # A body that fails its locked digest is removed, never left behind.
+        mismatch = consume[digest_check:publish]
+        self.assertIn("part.delete()", mismatch)
+        self.assertIn("item.destinationFile.delete()", mismatch)
+        self.assertIn("terminal = true", mismatch)
+
+    def test_r3_journal_persists_resume_state_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        self.assertTrue(overlay.is_file(), "r3 download journal must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'writer.name("session_id").value(batch.sessionId)',
+            'writer.name("filesystem_id").value(batch.filesystemId)',
+            'writer.name("bytes_written").value(item.bytesWritten)',
+            "stream.fd.sync()",
+            "temporary.renameTo(journalFile)",
+        ):
+            self.assertIn(required, text)
+
+        write = text.split("fun write(", 1)[1].split("\n    fun ", 1)[0]
+        # The descriptor has to still be open when it is synced, and the journal is
+        # only published once those bytes are durable.
+        self.assertLess(write.index("stream.fd.sync()"), write.index("renameTo(journalFile)"))
+
+        # An unreadable journal must not be resumed from.
+        read = text.split("fun read(", 1)[1].split("\n    fun ", 1)[0]
+        self.assertIn("catch (err: IOException)", read)
+        self.assertIn("null", read)
+
+    def test_r3_profile_copies_the_download_transfer_overlay(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        copied = {
+            operation.get("source"): operation.get("path")
+            for operation in profile["operations"]
+            if operation.get("type") == "copy_file"
+        }
+
+        for source, target in (
+            ("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt"),
+            ("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3DownloadJournalTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3DownloadJournalTest.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt"),
+        ):
+            self.assertEqual(target, copied.get(source), source)
+
+    def test_r3_copy_file_sources_are_pinned_to_their_current_bytes(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        for operation in profile["operations"]:
+            if operation.get("type") != "copy_file":
+                continue
+            source = Path(operation["source"])
+            self.assertTrue(source.is_file(), operation["source"])
+            actual = hashlib.sha256(source.read_bytes()).hexdigest()
+            self.assertEqual(actual, operation.get("sha256"), operation["source"])
+
+    def test_r3_service_enters_the_foreground_before_it_transfers(self):
+        service = Path("compat/r3/java/tech/ula/library/AssetDownloadService.kt")
+        self.assertTrue(service.is_file(), "r3 download service must exist")
+        text = service.read_text(encoding="utf-8")
+
+        start = text.split("override fun onStartCommand(", 1)[1]
+        start = start.split("\n    private ", 1)[0]
+        # Android stops a background service that starts long work.
+        self.assertLess(start.index("startInForeground("), start.index("AssetDownloadRunner("))
+        self.assertIn("FOREGROUND_SERVICE_TYPE_DATA_SYNC", text)
+        self.assertIn("stopForegroundCompat()", text)
+        self.assertIn("stopSelf()", text)
+
+        # The library pins androidx.core 1.6.0, which has no typed ServiceCompat.
+        self.assertNotIn("import androidx.core.app.ServiceCompat", text)
+        self.assertNotIn("ServiceCompat.", text)
+        # Every version-gated platform call stays behind a guard.
+        for guarded in ("FOREGROUND_SERVICE_TYPE_DATA_SYNC", "FLAG_IMMUTABLE"):
+            index = text.index(guarded)
+            preceding = text[:index]
+            self.assertIn("Build.VERSION.SDK_INT >=", preceding, guarded)
+
+    def test_r3_runner_journals_every_state_before_announcing_it(self):
+        runner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt")
+        self.assertTrue(runner.is_file(), "r3 download runner must exist")
+        text = runner.read_text(encoding="utf-8")
+
+        loop = text.split("while (true) {", 1)[1].split("\n        val outcome", 1)[0]
+        # A listener must never learn of progress a restart could not confirm.
+        self.assertLess(loop.index("journal.write(batch)"), loop.index("lifecycle.onProgress("))
+        self.assertIn("if (result is TransferFailed && result.terminal) break", loop)
+
+        # Work already published is adopted before the network is touched again.
+        prelude = text.split("fun run(", 1)[1].split("while (true) {", 1)[0]
+        self.assertLess(prelude.index("reconcile("), prelude.index("lifecycle.onStarted("))
+
+    def test_r3_planner_stops_a_batch_once_an_item_fails_terminally(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        self.assertTrue(planner.is_file(), "r3 download planner must exist")
+        text = planner.read_text(encoding="utf-8")
+
+        pending = text.split("fun nextPending(", 1)[1].split("\n    fun ", 1)[0]
+        # Continuing past a terminal failure only spends more of the user's data.
+        self.assertIn(
+            "if (batch.items.any { it.state == DownloadItemState.FAILED }) return null",
+            pending,
+        )
+        self.assertIn("fun plan(", text)
+        self.assertIn("fun reconcile(", text)
+
+    def test_r3_catalog_requires_exact_release_bytes(self):
+        catalog = Path("compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt")
+        self.assertTrue(catalog.is_file(), "r3 payload catalog must exist")
+        text = catalog.read_text(encoding="utf-8")
+
+        # A payload with no URL or digest cannot be selected by exact bytes.
+        self.assertIn("if (url.isBlank() || sha256.isBlank()) return null", text)
+        self.assertIn('const val ROOTFS_PAYLOAD = "rootfs.tar.gz"', text)
+        self.assertIn('const val ASSETS_PAYLOAD = "assets.tar.gz"', text)
+        # Every URL is read from the lock, never assembled from a moving pointer.
+        self.assertNotIn('"latest"', text)
+        self.assertNotIn('url +', text)
+        self.assertIn('"release" -> release = reader.nextString()', text)
+
+    def test_r3_profile_declares_the_data_sync_download_service(self):
+        profile = load_profile(Path("profiles/idle.json"))
+        operations = "\n".join(
+            json.dumps(operation, sort_keys=True) for operation in profile["operations"]
+        )
+
+        self.assertIn("android.permission.FOREGROUND_SERVICE_DATA_SYNC", operations)
+        self.assertIn('android:name=\\".AssetDownloadService\\"', operations)
+        self.assertIn('android:foregroundServiceType=\\"dataSync\\"', operations)
+        self.assertIn('android:exported=\\"false\\"', operations)
+
+    def test_r3_download_overlay_is_copied_into_every_app(self):
+        profile = load_profile(Path("profiles/idle.json"))
+        copied = {
+            operation.get("source"): operation.get("path")
+            for operation in profile["operations"]
+            if operation.get("type") == "copy_file"
+        }
+
+        for source in (
+            "compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+            "compat/r3/java/tech/ula/library/AssetDownloadService.kt",
+        ):
+            self.assertIn(source, copied)
+            self.assertTrue(copied[source].startswith("UserLAndLibrary/app/src/main/java/"), source)
+
+    def test_r3_switchover_removes_the_oem_download_provider(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in operations)
+
+        # The receiver, the provider handle, and its import all go.
+        for removed in (
+            "import android.app.DownloadManager",
+            "downloadBroadcastReceiver",
+            "getSystemService(Context.DOWNLOAD_SERVICE)",
+        ):
+            self.assertTrue(
+                any(op.get("type") == "replace" and removed in op.get("old", "")
+                    for op in operations),
+                removed,
+            )
+        self.assertIn("AssetDownloadSignals.observe", blob)
+        self.assertIn("AssetDownloader(assetPreferences, ulaFiles, applicationContext)", blob)
+
+    def test_r3_switchover_operations_run_after_the_r2_ones_they_edit(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+
+        def index_of(predicate):
+            return next(i for i, op in enumerate(operations) if predicate(op))
+
+        # r2 creates the receiver registration; the switchover removes it, so the
+        # ordering between them is load-bearing.
+        creates = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("new", "")
+        )
+        removes = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("old", "")
+        )
+        self.assertLess(creates, removes)
+
+    def test_r3_fsm_reattaches_to_a_download_already_running(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in profile["operations"])
+
+        # Reopening mid-download used to yield IncorrectSessionTransition.
+        self.assertIn("cachedSessionId() == event.session.id", blob)
+        self.assertIn("handleAssetDownloadState(assetDownloader.syncStateWithCache())", blob)
+        self.assertIn("rememberSelection(session.id, filesystem.id)", blob)
+
+    def test_r3_runtime_catalog_is_bundled_and_matches_the_lock(self):
+        catalog_path = Path("compat/r3/assets/r3-payloads.json")
+        lock_path = Path("payloads.lock.json")
+        self.assertTrue(lock_path.is_file(), "the r3 payload lock must be committed")
+        self.assertTrue(catalog_path.is_file(), "the bundled runtime catalog must exist")
+
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+        # The catalog is a deterministic projection, so it cannot drift from the lock.
+        from importlib.machinery import SourceFileLoader
+        render = SourceFileLoader(
+            "render_runtime_catalog", "tools/render_runtime_catalog.py"
+        ).load_module()
+        self.assertEqual(render.render_catalog(lock), catalog)
+
+        self.assertEqual(10, len(catalog["apps"]))
+        pairs = sum(len(app["abis"]) for app in catalog["apps"])
+        self.assertEqual(39, pairs, "ten apps across four ABIs, less deVStudio x86")
+
+        for app in catalog["apps"]:
+            for abi, record in app["abis"].items():
+                where = f"{app['id']}/{abi}"
+                self.assertTrue(record["asset_list"], where)
+                for name in ("assets.tar.gz", "rootfs.tar.gz"):
+                    payload = record[name]
+                    self.assertRegex(payload["sha256"], r"^[0-9a-f]{64}$", where)
+                    self.assertGreater(payload["size"], 0, where)
+                    self.assertTrue(
+                        payload["url"].startswith("https://github.com/"), where
+                    )
+                    # Selection is by exact release, never a moving pointer.
+                    self.assertNotIn("/latest/", payload["url"])
+                    self.assertIn(payload["release"], payload["url"], where)
+
+    def test_r3_profile_bundles_the_runtime_catalog_asset(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("source") == "compat/r3/assets/r3-payloads.json"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/assets/r3-payloads.json"
+                for operation in profile["operations"]
+            )
+        )
+
+    def test_r3_repair_touches_only_the_extraction_markers(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/FilesystemManager.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        body = text.split("fun invalidateExtraction(", 1)[1].split("\n    fun ", 1)[0]
+
+        self.assertIn("success.delete()", body)
+        self.assertIn("failure.delete()", body)
+        # A repair that reached further could destroy the data the user came back
+        # for. Nothing recursive, and nothing outside the two markers.
+        self.assertNotIn("deleteRecursively", body)
+        self.assertNotIn("walkBottomUp", body)
+        for forbidden in ("home", "rootfs", "archive", "filesystemRoot"):
+            self.assertNotIn(forbidden, body, forbidden)
+
+    def test_r3_progress_carries_bytes_not_only_file_counts(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        journal = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        planner_text = planner.read_text(encoding="utf-8")
+        journal_text = journal.read_text(encoding="utf-8")
+
+        # A single 200 MB rootfs makes a file-count bar sit still for minutes.
+        self.assertIn("val bytesWritten: Long", planner_text)
+        self.assertIn("val totalBytes: Long", planner_text)
+        self.assertIn("val bytesWritten: Long get() = items.sumOf { it.bytesWritten }", journal_text)
+        # An unknown length must not render as a wrong total.
+        self.assertIn("expectedBytes == DownloadItem.UNKNOWN_LENGTH }) 0", journal_text)
+
+    def test_r3_retry_resubmits_only_what_is_outstanding(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        text = planner.read_text(encoding="utf-8")
+
+        body = text.split("fun retry(", 1)[1].split("\n    private fun ", 1)[0]
+
+        # Completed items are returned untouched, so Retry costs only the remainder.
+        self.assertIn("if (item.state == DownloadItemState.COMPLETE) {", body)
+        self.assertIn("item\n            } else {", body)
+        self.assertIn("attempts = 0", body)
+        self.assertIn("state = DownloadItemState.PENDING", body)
+        self.assertIn("error = null", body)
+        # The resume offset has to survive; the part file is still on disk.
+        self.assertNotIn("bytesWritten = 0", body)
+
+    def test_r3_download_failure_is_recoverable_not_an_illegal_state(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        operations = profile["operations"]
+
+        # The Github dead-end dialog must no longer be where a stalled setup lands.
+        retired = next(
+            op for op in operations
+            if op.get("type") == "replace"
+            and "postIllegalStateWithLog(DownloadsDidNotCompleteSuccessfully" in op.get("old", "")
+        )
+        self.assertIn("DownloadRetryRequired(", retired["new"])
+        self.assertNotIn("postIllegalStateWithLog", retired["new"])
+
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in operations)
+        for required in (
+            "fun retryDownloads()",
+            "fun repairFilesystem()",
+            "fun cancelSetup()",
+            "displayDownloadRetryDialog(",
+            "R.string.button_retry",
+            "R.string.button_repair",
+            "R.string.button_cancel",
+        ):
+            self.assertIn(required, blob, required)
+
+    def test_r3_recovery_dialog_offers_repair_only_when_it_applies(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        dialog = next(
+            op for op in profile["operations"]
+            if "displayDownloadRetryDialog" in op.get("new", "")
+            and "AlertDialog.Builder" in op.get("new", "")
+        )["new"]
+
+        self.assertIn("if (state.canRepair) {", dialog)
+        # Cancel must not discard payloads the user already paid to download.
+        self.assertIn("viewModel.cancelSetup()", dialog)
+        for destructive in ("delete", "deleteRecursively", "clearSupportFiles"):
+            self.assertNotIn(destructive, dialog, destructive)
+
+    def test_r3_repair_event_uses_the_bounded_invalidation(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        handler = next(
+            op for op in profile["operations"]
+            if "handleRepairFilesystem" in op.get("new", "")
+            and "invalidateExtraction" in op.get("new", "")
+        )["new"]
+
+        self.assertIn('filesystemManager.invalidateExtraction("${filesystem.id}")', handler)
+        # Repair re-runs extraction; it never deletes the filesystem itself.
+        self.assertNotIn("deleteFilesystem", handler)
+        self.assertNotIn("deleteRecursively", handler)
+
+    def test_r3_every_string_the_recovery_ui_references_is_defined(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        added = "".join(
+            op.get("new", "") for op in profile["operations"]
+            if op.get("path", "").endswith("res/values/strings.xml")
+        )
+        defined = set(re.findall(r'<string name="([^"]+)"', added))
+
+        for name in (
+            "progress_downloading_bytes", "download_retry_title",
+            "download_retry_message", "download_retry_message_generic",
+            "button_retry", "button_repair",
+        ):
+            self.assertIn(name, defined, name)
+
+    def test_r3_credits_lock_pins_the_official_badge_and_every_app(self):
+        lock = json.loads(Path("credits.lock.json").read_text(encoding="utf-8"))
+
+        badge = lock["badge"]
+        self.assertEqual(
+            "https://play.google.com/intl/en_us/badges/static/images/badges/"
+            "en_badge_web_generic.png",
+            badge["source"],
+        )
+        data = Path(badge["path"]).read_bytes()
+        self.assertEqual(badge["size"], len(data))
+        self.assertEqual(badge["sha256"], hashlib.sha256(data).hexdigest())
+        self.assertTrue(data.startswith(b"\x89PNG"), "the badge must be a PNG")
+
+        sources = json.loads(Path("sources.lock.json").read_text(encoding="utf-8"))
+        expected = {app["package_id"] for app in sources["apps"]}
+        credited = {app["package_id"] for app in lock["apps"]}
+        self.assertEqual(expected, credited, "every launcher must credit a creator")
+        for app in lock["apps"]:
+            self.assertTrue(app["play_package"], app["id"])
+
+    def test_r3_support_card_appears_only_after_a_session_starts(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in profile["operations"])
+
+        # Never during setup or a repair: only once a session has really started.
+        self.assertIn("killProgressBar()", blob)
+        self.assertIn("creatorSupportPrompter.showAfterFirstSuccessfulSession()", blob)
+        automatic = next(
+            op for op in profile["operations"]
+            if "showAfterFirstSuccessfulSession" in op.get("new", "")
+        )
+        self.assertIn("handleSessionHasBeenActivated", automatic["old"])
+
+        # And it stays reachable for good.
+        self.assertIn("creatorSupportPrompter.showFromMenu()", blob)
+        self.assertIn("@+id/about_and_support", blob)
+
+    def test_r3_creator_links_reach_the_listing_without_a_dead_end(self):
+        links = Path("compat/r3/java/tech/ula/library/utils/CreatorLinks.kt").read_text(encoding="utf-8")
+        self.assertIn('"market://details?id=$packageName"', links)
+        self.assertIn('"https://play.google.com/store/apps/details?id=$packageName"', links)
+
+        prompter = Path("compat/r3/java/tech/ula/library/utils/CreatorSupportPrompter.kt").read_text(encoding="utf-8")
+        # A device with no Play app still has to reach the listing.
+        self.assertIn("catch (err: ActivityNotFoundException)", prompter)
+        self.assertLess(prompter.index("CreatorLinks.market"), prompter.index("CreatorLinks.web"))
+
+    def test_r3_support_card_uses_each_apps_own_icon(self):
+        layout = Path("compat/r3/res/layout/dia_creator_support.xml").read_text(encoding="utf-8")
+        self.assertIn("@mipmap/ic_main_launcher", layout)
+        # The message names the app, so it cannot be bound statically.
+        self.assertNotIn('android:text="@string/creator_support_message"', layout)
+
+    def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
+        profile = load_profile(Path("profiles/devstudio.json"))
+
+        self.assertTrue(
+            any(
+                operation.get("path") == "app/build.gradle"
+                and "abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'"
+                in operation.get("text", "")
                 for operation in profile["operations"]
             )
         )

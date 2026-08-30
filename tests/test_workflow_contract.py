@@ -1,4 +1,7 @@
+import json
+import re
 import unittest
+from fnmatch import fnmatch
 from pathlib import Path
 
 
@@ -13,25 +16,114 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertNotIn("matrix.app == 'foxbox'", text, name)
             self.assertIn("tools/stage_support_assets.py", text, name)
 
-    def test_r2_release_requires_ten_runtime_evidence_bundles(self):
+    def test_release_gate_requires_twenty_runtime_evidence_bundles(self):
         text = Path(".github/workflows/upgrade-smoke.yml").read_text()
 
         for required in (
             "needs: upgrade-smoke",
-            "v2026.08.29-r2",
-            "*-upgrade-evidence",
             "pid-stability.txt",
             "ui.xml",
             "permissions.txt",
             "screenshot.png",
+            "setup-complete.png",
+            "download-journal.json",
+            "payload-digest-report.txt",
             "--sources-lock sources.lock.json",
             "--dependencies-lock dependencies.lock.json",
             "--release-lock release.lock.json",
-            "Tag verified commit and publish r2",
             "gh release create",
         ):
             self.assertIn(required, text)
         self.assertNotIn("--prerelease", text)
+
+    def test_release_tag_and_upgrade_baseline_come_from_the_lock(self):
+        """A hard-coded tag ships the previous release under the new name."""
+        release = json.loads(Path("release.lock.json").read_text())
+        text = Path(".github/workflows/upgrade-smoke.yml").read_text()
+
+        # The workflow must derive both tags from release.lock.json rather
+        # than carrying a literal that goes stale one release later.
+        self.assertIn("release.lock.json", text)
+        for stale in (
+            "v2026.08.29-rc1",
+            "publish r2",
+            "Build signed r2 APK",
+        ):
+            self.assertNotIn(stale, text, f"stale release target: {stale}")
+
+        # No literal tag may appear at all. Allowing the lock's own values
+        # through is not enough: publishing under the previous release's tag
+        # uses a literal the lock does contain, and is the exact defect this
+        # guards against.
+        self.assertEqual(
+            set(re.findall(r"v2026\.\d{2}\.\d{2}-[a-z0-9]+", text)),
+            set(),
+            "release targets must be read from release.lock.json, not written out",
+        )
+        self.assertIn("RELEASE_TAG={release['release_tag']}", text)
+        self.assertIn(
+            "BASELINE_TAG: ${{ steps.meta.outputs.upgrade_from_tag }}", text
+        )
+        # Guard the lock itself: the two tags must differ, or the release
+        # overwrites the build it was supposed to be an upgrade from.
+        self.assertNotEqual(release["release_tag"], release["upgrade_from_tag"])
+
+    @staticmethod
+    def _artifact_names(text: str) -> tuple[list[str], list[str]]:
+        """Collect upload names and download patterns from a workflow.
+
+        Scanned line by line rather than parsed, so the tests keep working
+        without adding a YAML dependency to the contract job.
+        """
+        uploads: list[str] = []
+        downloads: list[str] = []
+        action = None
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("- ") or stripped.startswith("uses:"):
+                if "actions/upload-artifact" in stripped:
+                    action = "upload"
+                elif "actions/download-artifact" in stripped:
+                    action = "download"
+                else:
+                    action = None
+            if action == "upload" and stripped.startswith("name:"):
+                uploads.append(stripped[len("name:"):].strip().strip("'\""))
+                action = None
+            elif action == "download" and stripped.startswith("pattern:"):
+                downloads.append(stripped[len("pattern:"):].strip().strip("'\""))
+                action = None
+        return uploads, downloads
+
+    def test_artifact_name_scan_finds_both_directions(self):
+        """The scan below is only evidence if it really reads a workflow."""
+        uploads, downloads = self._artifact_names(
+            Path(".github/workflows/upgrade-smoke.yml").read_text()
+        )
+        self.assertEqual(len(uploads), 2)
+        self.assertEqual(len(downloads), 2)
+
+    def test_every_artifact_download_pattern_matches_an_upload(self):
+        """A download pattern that matches nothing yields an empty gate."""
+        for name in ("ci.yml", "upgrade-smoke.yml", "release.yml"):
+            uploads, downloads = self._artifact_names(
+                Path(".github/workflows", name).read_text()
+            )
+
+            # Expand the matrix placeholders an artifact name can carry, so a
+            # pattern is checked against names that can really be produced.
+            concrete = []
+            for upload in uploads:
+                expanded = re.sub(r"\$\{\{[^}]*api-level[^}]*\}\}", "35", upload)
+                expanded = re.sub(r"\$\{\{[^}]*\}\}", "foxbox", expanded)
+                concrete.append(expanded)
+
+            for pattern in downloads:
+                self.assertTrue(
+                    any(fnmatch(upload, pattern) for upload in concrete),
+                    f"{name}: pattern {pattern!r} matches no uploaded artifact "
+                    f"among {concrete}",
+                )
 
     def test_manual_rebuild_cannot_bypass_runtime_release_gate(self):
         text = Path(".github/workflows/release.yml").read_text()
@@ -65,7 +157,7 @@ class WorkflowContractTests(unittest.TestCase):
         ):
             self.assertIn(f"secrets.{secret}", text)
 
-    def test_upgrade_smoke_uses_published_rc1_and_one_locked_r2_build(self):
+    def test_upgrade_smoke_uses_the_published_baseline_and_one_locked_build(self):
         smoke = Path(".github/workflows/upgrade-smoke.yml").read_text()
 
         for required in (
@@ -75,7 +167,7 @@ class WorkflowContractTests(unittest.TestCase):
             "${{ matrix.app }}-verified-apk",
             "needs: upgrade-smoke",
             "Build and release all UserLAnd launcher APKs",
-            "v2026.08.29-rc1",
+            "steps.meta.outputs.upgrade_from_tag",
             "gh release download",
             "SHA256SUMS",
             "release.lock.json",
@@ -88,7 +180,7 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertIn(required, smoke)
 
         self.assertLess(
-            smoke.index("Build signed r2 APK"),
+            smoke.index("Build the signed release APK"),
             smoke.index("Set up Java 17 for emulator tools"),
         )
         self.assertLess(
