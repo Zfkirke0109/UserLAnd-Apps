@@ -50,8 +50,13 @@ capture_evidence() {
     > "$EVIDENCE_DIR/services.txt" 2>&1 || true
   adb shell dumpsys notification --noredact \
     > "$EVIDENCE_DIR/notifications.txt" 2>&1 || true
-  adb shell cat "$APP_FILES/downloads/download-journal.json" \
-    > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
+  # Only if the journal was never captured while complete: overwriting the
+  # snapshot with the emptied file on disk is how the last run lost the one
+  # record that could explain it.
+  if [[ ! -s "$EVIDENCE_DIR/download-journal.json" ]]; then
+    adb shell cat "$APP_FILES/downloads/download-journal.json" \
+      > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
+  fi
   adb shell find "$APP_FILES" -maxdepth 3 \
     > "$EVIDENCE_DIR/app-files-tree.txt" 2>/dev/null || true
   # The journal is cleared once downloads are staged, so on an extraction
@@ -362,13 +367,25 @@ device_file_exists() {
 
 # ------------------------------------------------------------------ first run
 
+# The app clears the journal as soon as it stages the downloads, so the gate
+# gets exactly one chance to read it. Keep a copy the moment it reads COMPLETE:
+# every later assertion works from that copy, never from the device again.
+JOURNAL_SNAPSHOT="$EVIDENCE_DIR/download-journal.json"
+
 journal_batch_state() {
-  adb shell cat "$APP_FILES/downloads/download-journal.json" 2>/dev/null \
-    | python3 -c 'import json,sys
+  local raw state
+  raw="$(adb shell cat "$APP_FILES/downloads/download-journal.json" 2>/dev/null || true)"
+  [[ -n $raw ]] || { printf ''; return 0; }
+  state="$(printf '%s' "$raw" | python3 -c 'import json,sys
 try:
     print(json.load(sys.stdin).get("state", ""))
 except Exception:
-    print("")' 2>/dev/null || true
+    print("")' 2>/dev/null || true)"
+  state="${state//$'\r'/}"
+  if [[ $state == COMPLETE ]]; then
+    printf '%s' "$raw" > "$JOURNAL_SNAPSHOT"
+  fi
+  printf '%s' "$state"
 }
 
 downloads_are_complete() {
@@ -412,8 +429,8 @@ assert_no_pending_transfers() {
 # The journal records the digest each payload was verified against. Comparing it
 # to the lock proves the bytes on the device are the bytes the release pinned.
 assert_payload_digests_match_lock() {
-  adb shell cat "$APP_FILES/downloads/download-journal.json" \
-    > "$EVIDENCE_DIR/download-journal.json" 2>/dev/null || true
+  [[ -s "$JOURNAL_SNAPSHOT" ]] \
+    || fail "no download journal was captured while the batch was complete"
   python3 "$REPOSITORY_ROOT/tools/assert_payload_digests.py" \
     --package "$PACKAGE_ID" \
     --abi "$DEVICE_ABI" \
