@@ -38,7 +38,11 @@ class R3ResumableAssetTransferTest {
             OkHttpClient.Builder()
                 .connectTimeout(2, TimeUnit.SECONDS)
                 .readTimeout(2, TimeUnit.SECONDS)
-                .build()
+                .build(),
+            // Retry backoff is real time in production and is asserted in
+            // R3TransferOutageTest. These cases are about what is requested and
+            // published, so they must not pay for the waiting.
+            sleeper = {}
         )
     }
 

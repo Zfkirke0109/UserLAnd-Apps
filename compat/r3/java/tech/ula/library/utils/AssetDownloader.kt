@@ -102,15 +102,26 @@ class AssetDownloader(
      * what actually happened, so a signal that never arrived costs nothing.
      */
     fun handleDownloadComplete(downloadId: Long): AssetDownloadState {
-        val batch = journal.read() ?: return NonUserlandDownloadFound
+        val batch = journal.read()
+        // A signal that arrives once the batch has been reported is a late echo:
+        // the state machine has already acted on the outcome and moved on, so
+        // announcing it again would drag it backwards. Doing nothing is what the
+        // machine expects of a signal that is not ours.
+        if (!signalBelongsToBatch(batch, assetPreferences.getDownloadsAreInProgress())) {
+            return NonUserlandDownloadFound
+        }
         val outcome = AssetDownloadPlanner.outcomeOf(batch)
-        if (outcome is BatchSucceeded) {
+        // Both ends of the batch are terminal: after either, further signals are
+        // echoes. Leaving the flag set after a failure would make the next one
+        // land as an illegal transition instead of being ignored.
+        if (outcome is BatchSucceeded || outcome is BatchFailed) {
             assetPreferences.setDownloadsAreInProgress(inProgress = false)
         }
         return asAssetDownloadState(outcome)
     }
 
-    fun downloadIsForUserland(id: Long): Boolean = journal.read() != null
+    fun downloadIsForUserland(id: Long): Boolean =
+        signalBelongsToBatch(journal.read(), assetPreferences.getDownloadsAreInProgress())
 
     /**
      * Runs the batch again, keeping everything already verified. Returns false when
