@@ -386,6 +386,286 @@ class CompatibilityTests(unittest.TestCase):
             self.assertEqual(1, operation.get("count"))
             self.assertNotIn("@Test", operation["new"])
 
+    def test_r3_transfer_resumes_verifies_and_publishes_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        self.assertTrue(overlay.is_file(), "r3 resumable transfer must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'builder.header("Range", "bytes=$resumeFrom-")',
+            "response.code == HTTP_PARTIAL_CONTENT && resumeFrom > 0",
+            "const val DEFAULT_MAX_ATTEMPTS = 5",
+            "MessageDigest.getInstance(\"SHA-256\")",
+            "output.fd.sync()",
+            "part.renameTo(destination)",
+        ):
+            self.assertIn(required, text)
+
+        # Setup payloads must not go back through the OEM download provider.
+        self.assertNotIn("DownloadManager", text)
+
+    def test_r3_transfer_never_publishes_before_it_verifies(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt")
+        text = overlay.read_text(encoding="utf-8")
+
+        consume = text.split("private fun consume(", 1)[1]
+        consume = consume.split("private fun retryable(", 1)[0]
+
+        digest_check = consume.index("if (item.isLocked) {")
+        length_check = consume.index("written != item.expectedBytes")
+        publish = consume.index("publish(part, item.destinationFile)")
+        self.assertLess(length_check, digest_check)
+        self.assertLess(digest_check, publish)
+
+        # A body that fails its locked digest is removed, never left behind.
+        mismatch = consume[digest_check:publish]
+        self.assertIn("part.delete()", mismatch)
+        self.assertIn("item.destinationFile.delete()", mismatch)
+        self.assertIn("terminal = true", mismatch)
+
+    def test_r3_journal_persists_resume_state_atomically(self):
+        overlay = Path("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt")
+        self.assertTrue(overlay.is_file(), "r3 download journal must exist")
+        text = overlay.read_text(encoding="utf-8")
+
+        for required in (
+            'writer.name("session_id").value(batch.sessionId)',
+            'writer.name("filesystem_id").value(batch.filesystemId)',
+            'writer.name("bytes_written").value(item.bytesWritten)',
+            "stream.fd.sync()",
+            "temporary.renameTo(journalFile)",
+        ):
+            self.assertIn(required, text)
+
+        write = text.split("fun write(", 1)[1].split("\n    fun ", 1)[0]
+        # The descriptor has to still be open when it is synced, and the journal is
+        # only published once those bytes are durable.
+        self.assertLess(write.index("stream.fd.sync()"), write.index("renameTo(journalFile)"))
+
+        # An unreadable journal must not be resumed from.
+        read = text.split("fun read(", 1)[1].split("\n    fun ", 1)[0]
+        self.assertIn("catch (err: IOException)", read)
+        self.assertIn("null", read)
+
+    def test_r3_profile_copies_the_download_transfer_overlay(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+        copied = {
+            operation.get("source"): operation.get("path")
+            for operation in profile["operations"]
+            if operation.get("type") == "copy_file"
+        }
+
+        for source, target in (
+            ("compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt"),
+            ("compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+             "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3DownloadJournalTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3DownloadJournalTest.kt"),
+            ("compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+             "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt"),
+        ):
+            self.assertEqual(target, copied.get(source), source)
+
+    def test_r3_copy_file_sources_are_pinned_to_their_current_bytes(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        for operation in profile["operations"]:
+            if operation.get("type") != "copy_file":
+                continue
+            source = Path(operation["source"])
+            self.assertTrue(source.is_file(), operation["source"])
+            actual = hashlib.sha256(source.read_bytes()).hexdigest()
+            self.assertEqual(actual, operation.get("sha256"), operation["source"])
+
+    def test_r3_service_enters_the_foreground_before_it_transfers(self):
+        service = Path("compat/r3/java/tech/ula/library/AssetDownloadService.kt")
+        self.assertTrue(service.is_file(), "r3 download service must exist")
+        text = service.read_text(encoding="utf-8")
+
+        start = text.split("override fun onStartCommand(", 1)[1]
+        start = start.split("\n    private ", 1)[0]
+        # Android stops a background service that starts long work.
+        self.assertLess(start.index("startInForeground("), start.index("AssetDownloadRunner("))
+        self.assertIn("FOREGROUND_SERVICE_TYPE_DATA_SYNC", text)
+        self.assertIn("stopForegroundCompat()", text)
+        self.assertIn("stopSelf()", text)
+
+        # The library pins androidx.core 1.6.0, which has no typed ServiceCompat.
+        self.assertNotIn("import androidx.core.app.ServiceCompat", text)
+        self.assertNotIn("ServiceCompat.", text)
+        # Every version-gated platform call stays behind a guard.
+        for guarded in ("FOREGROUND_SERVICE_TYPE_DATA_SYNC", "FLAG_IMMUTABLE"):
+            index = text.index(guarded)
+            preceding = text[:index]
+            self.assertIn("Build.VERSION.SDK_INT >=", preceding, guarded)
+
+    def test_r3_runner_journals_every_state_before_announcing_it(self):
+        runner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt")
+        self.assertTrue(runner.is_file(), "r3 download runner must exist")
+        text = runner.read_text(encoding="utf-8")
+
+        loop = text.split("while (true) {", 1)[1].split("\n        val outcome", 1)[0]
+        # A listener must never learn of progress a restart could not confirm.
+        self.assertLess(loop.index("journal.write(batch)"), loop.index("lifecycle.onProgress("))
+        self.assertIn("if (result is TransferFailed && result.terminal) break", loop)
+
+        # Work already published is adopted before the network is touched again.
+        prelude = text.split("fun run(", 1)[1].split("while (true) {", 1)[0]
+        self.assertLess(prelude.index("reconcile("), prelude.index("lifecycle.onStarted("))
+
+    def test_r3_planner_stops_a_batch_once_an_item_fails_terminally(self):
+        planner = Path("compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt")
+        self.assertTrue(planner.is_file(), "r3 download planner must exist")
+        text = planner.read_text(encoding="utf-8")
+
+        pending = text.split("fun nextPending(", 1)[1].split("\n    fun ", 1)[0]
+        # Continuing past a terminal failure only spends more of the user's data.
+        self.assertIn(
+            "if (batch.items.any { it.state == DownloadItemState.FAILED }) return null",
+            pending,
+        )
+        self.assertIn("fun plan(", text)
+        self.assertIn("fun reconcile(", text)
+
+    def test_r3_catalog_requires_exact_release_bytes(self):
+        catalog = Path("compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt")
+        self.assertTrue(catalog.is_file(), "r3 payload catalog must exist")
+        text = catalog.read_text(encoding="utf-8")
+
+        # A payload with no URL or digest cannot be selected by exact bytes.
+        self.assertIn("if (url.isBlank() || sha256.isBlank()) return null", text)
+        self.assertIn('const val ROOTFS_PAYLOAD = "rootfs.tar.gz"', text)
+        self.assertIn('const val ASSETS_PAYLOAD = "assets.tar.gz"', text)
+        # Every URL is read from the lock, never assembled from a moving pointer.
+        self.assertNotIn('"latest"', text)
+        self.assertNotIn('url +', text)
+        self.assertIn('"release" -> release = reader.nextString()', text)
+
+    def test_r3_profile_declares_the_data_sync_download_service(self):
+        profile = load_profile(Path("profiles/idle.json"))
+        operations = "\n".join(
+            json.dumps(operation, sort_keys=True) for operation in profile["operations"]
+        )
+
+        self.assertIn("android.permission.FOREGROUND_SERVICE_DATA_SYNC", operations)
+        self.assertIn('android:name=\\".AssetDownloadService\\"', operations)
+        self.assertIn('android:foregroundServiceType=\\"dataSync\\"', operations)
+        self.assertIn('android:exported=\\"false\\"', operations)
+
+    def test_r3_download_overlay_is_copied_into_every_app(self):
+        profile = load_profile(Path("profiles/idle.json"))
+        copied = {
+            operation.get("source"): operation.get("path")
+            for operation in profile["operations"]
+            if operation.get("type") == "copy_file"
+        }
+
+        for source in (
+            "compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+            "compat/r3/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+            "compat/r3/java/tech/ula/library/AssetDownloadService.kt",
+        ):
+            self.assertIn(source, copied)
+            self.assertTrue(copied[source].startswith("UserLAndLibrary/app/src/main/java/"), source)
+
+    def test_r3_switchover_removes_the_oem_download_provider(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in operations)
+
+        # The receiver, the provider handle, and its import all go.
+        for removed in (
+            "import android.app.DownloadManager",
+            "downloadBroadcastReceiver",
+            "getSystemService(Context.DOWNLOAD_SERVICE)",
+        ):
+            self.assertTrue(
+                any(op.get("type") == "replace" and removed in op.get("old", "")
+                    for op in operations),
+                removed,
+            )
+        self.assertIn("AssetDownloadSignals.observe", blob)
+        self.assertIn("AssetDownloader(assetPreferences, ulaFiles, applicationContext)", blob)
+
+    def test_r3_switchover_operations_run_after_the_r2_ones_they_edit(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        operations = profile["operations"]
+
+        def index_of(predicate):
+            return next(i for i, op in enumerate(operations) if predicate(op))
+
+        # r2 creates the receiver registration; the switchover removes it, so the
+        # ordering between them is load-bearing.
+        creates = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("new", "")
+        )
+        removes = index_of(
+            lambda op: op.get("type") == "replace"
+            and "Context.RECEIVER_EXPORTED" in op.get("old", "")
+        )
+        self.assertLess(creates, removes)
+
+    def test_r3_fsm_reattaches_to_a_download_already_running(self):
+        profile = load_profile(Path("profiles/birdbox.json"))
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in profile["operations"])
+
+        # Reopening mid-download used to yield IncorrectSessionTransition.
+        self.assertIn("cachedSessionId() == event.session.id", blob)
+        self.assertIn("handleAssetDownloadState(assetDownloader.syncStateWithCache())", blob)
+        self.assertIn("rememberSelection(session.id, filesystem.id)", blob)
+
+    def test_r3_runtime_catalog_is_bundled_and_matches_the_lock(self):
+        catalog_path = Path("compat/r3/assets/r3-payloads.json")
+        lock_path = Path("payloads.lock.json")
+        self.assertTrue(lock_path.is_file(), "the r3 payload lock must be committed")
+        self.assertTrue(catalog_path.is_file(), "the bundled runtime catalog must exist")
+
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+        # The catalog is a deterministic projection, so it cannot drift from the lock.
+        from importlib.machinery import SourceFileLoader
+        render = SourceFileLoader(
+            "render_runtime_catalog", "tools/render_runtime_catalog.py"
+        ).load_module()
+        self.assertEqual(render.render_catalog(lock), catalog)
+
+        self.assertEqual(10, len(catalog["apps"]))
+        pairs = sum(len(app["abis"]) for app in catalog["apps"])
+        self.assertEqual(39, pairs, "ten apps across four ABIs, less deVStudio x86")
+
+        for app in catalog["apps"]:
+            for abi, record in app["abis"].items():
+                where = f"{app['id']}/{abi}"
+                self.assertTrue(record["asset_list"], where)
+                for name in ("assets.tar.gz", "rootfs.tar.gz"):
+                    payload = record[name]
+                    self.assertRegex(payload["sha256"], r"^[0-9a-f]{64}$", where)
+                    self.assertGreater(payload["size"], 0, where)
+                    self.assertTrue(
+                        payload["url"].startswith("https://github.com/"), where
+                    )
+                    # Selection is by exact release, never a moving pointer.
+                    self.assertNotIn("/latest/", payload["url"])
+                    self.assertIn(payload["release"], payload["url"], where)
+
+    def test_r3_profile_bundles_the_runtime_catalog_asset(self):
+        profile = load_profile(Path("profiles/gimp.json"))
+
+        self.assertTrue(
+            any(
+                operation.get("type") == "copy_file"
+                and operation.get("source") == "compat/r3/assets/r3-payloads.json"
+                and operation.get("path")
+                == "UserLAndLibrary/app/src/main/assets/r3-payloads.json"
+                for operation in profile["operations"]
+            )
+        )
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 

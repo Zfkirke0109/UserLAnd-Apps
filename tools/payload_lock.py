@@ -221,11 +221,14 @@ def verify_payload_lock(
                 errors.append(f"{label}/{abi}: asset list entries must be nonempty strings")
             elif len(asset_list) != len(set(asset_list)):
                 errors.append(f"{label}/{abi}: duplicate asset list entry")
-            elif set(asset_list) != set(EXPECTED_PAYLOADS):
+            elif set(asset_list) & set(EXPECTED_PAYLOADS):
+                # asset_list is the distribution support manifest read out of
+                # assets.txt; the payload archives are recorded as their own keys.
                 errors.append(
-                    f"{label}/{abi}: asset list must contain "
-                    "assets.tar.gz and rootfs.tar.gz"
+                    f"{label}/{abi}: asset list must not repeat the payload archives"
                 )
+            elif "assets.txt" in asset_list:
+                errors.append(f"{label}/{abi}: asset list must not contain assets.txt")
             for logical_name in EXPECTED_RECORDS:
                 if logical_name not in abi_record:
                     errors.append(f"{label}/{abi}: missing payload {logical_name}")

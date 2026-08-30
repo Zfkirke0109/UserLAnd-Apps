@@ -1,0 +1,1245 @@
+{
+  "apps": [
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "b5aa82433f409da24f1d034b1196100be204bd44d4d57a92203397963e2ed1a6",
+            "size": 817545,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "b8635650b14d5270c519e3dd2bf50bb68db5b47bb3589aec4caf29053c3848cb",
+            "size": 249011707,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "95cbc0420ac6508c5fa13e6849f837c3e965de79d2836918ae4adaac14f4cfa9",
+            "size": 942424,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "bed687ce3b360ffd849556297bc941d2453895c3a7889ce85eae797cdf41e68f",
+            "size": 264060686,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "921bda108f390f4211778a4a7a8d9b7b3c414faf7e71db4c99d92a07135f0c27",
+            "size": 996282,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "83f662e6938cc47023d1d4822b059c122c256bfe53a1452923b19e5af7a15d6c",
+            "size": 285849416,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "04da0a67138fb9a72332aae2263fc11d98083ed42211fd04c8ea95549abe687b",
+            "size": 991744,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v7.8.11",
+            "sha256": "693ab3a4d2b090883dad9511f23bc59b6639efe511da129dc0ae38e1086cf9de",
+            "size": 276096161,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.8.11/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "andacious",
+      "package_id": "tech.ula.andacious",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Debian"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "cf150923db8ef7571093d33f837b5be8fea798627f24bb0f2425dfc418697ede",
+            "size": 817802,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "17308694ee09816ea64dc709ec643a003c830fb5a21fe6bf843513e03da2ee77",
+            "size": 253940385,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "d69ba242dbdc4ad58cc090eb45462f3db850c13fc78e85652f6a7e2201f082f6",
+            "size": 942323,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "5f6f0ac7e8b77688bd5136c4e11a3c2ceb2c6c6ac2b2c197cfd68f4567384ebf",
+            "size": 269557360,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "265e97f1ae36eed1485aaed399027b0357f1fd6f10c494d3bb33f86a092b83e3",
+            "size": 997185,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "47431d785f3147fd5e7507d172cb738451f857f14a62d2d9a64c21bafb73f8fa",
+            "size": 278715253,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "ec8f4b8721147b012cff395942ebaceb71bc13d83a07b8d43acb9317e1471585",
+            "size": 991843,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.2",
+            "sha256": "3e98db8500e5e87ce8cc5af22f25134572dcdfcaf7fc91fcef3ee68c253b68d9",
+            "size": 272288312,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Thunderbird/releases/download/v0.0.2/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "birdbox",
+      "package_id": "tech.ula.birdbox",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Thunderbird"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "aeb5e531e87a754fd7a2c176185ba6f52b8f0c414e929bfe4a22f0f629c510ac",
+            "size": 886698,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "e3d746427c939da30c338952ec168a7cb3b981649f93e6fc9321f623860645b0",
+            "size": 394544725,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "b47ba1e1176dc007955de8fabf14ee44d76e29dc05582d56004adc427056ebaf",
+            "size": 983723,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "64d016396fadc69b29ced6b740277461e03dabd4c850c1d46a3f6d5fcbb6b2e2",
+            "size": 424625467,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "d86f030b7bebba48211b3e9a72f44221c6f735e9eef2036706a5aa0b48071bcf",
+            "size": 1035898,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "c78e8e8ba52a9e1974b4d599370ed2f790adda2a7d568797214b10698538692d",
+            "size": 441211582,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-deVStudio/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "devstudio",
+      "package_id": "tech.ula.devstudio",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-deVStudio"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "68b4a2d14beb01128241ce322afbd9b79eee76ce72c46b8c6547290ef92fac86",
+            "size": 818073,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "c4b05cbfa38cf28f04a40c4360bc67a95ff65db8c53d4c39ae6330ecba46c636",
+            "size": 278422528,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "380ca76e8afa3c21a03d76026d00dd0562a7213660d832a1f7d9bdcbfbc1522a",
+            "size": 942733,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "94514e9d6f0dfa846777e86e9e31d1acb614853d846f4913bd7fb09e6be1ec06",
+            "size": 294156522,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "2fd1f69c798ed3923306ed5f738c46dde6eb112da64d92e2588c5ae205d36a7f",
+            "size": 997140,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "b5d092834bdb96e797d888fcd690c9eef7a4dc00ba6e9b8b6859199a67f6ebaf",
+            "size": 315392300,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "1171c237e7038493d6d5ad6e9d492fe6ee57fb1a2966d807a085f6d8979ccecf",
+            "size": 991740,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v7.7.9",
+            "sha256": "f95cac8764608704b9950e37b722961916f01e2c18d75c22dd008b593c127010",
+            "size": 307175937,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Debian/releases/download/v7.7.9/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "foxbox",
+      "package_id": "tech.ula.foxbox_pro",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Debian"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "69c6850182684d14457a76f95758647386a8c3534a38e174ffd3861626ed392c",
+            "size": 817465,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "def97c73ed680f05a571c630fddb24fb9b554b7d2f372708072d94350201f18a",
+            "size": 279776840,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "cf2061c9f983235752634ae694d915f101531cf2ebf476473e9d95983347c769",
+            "size": 941984,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "7a31db9cc8f50f12c504b26e74cb4c4dcae6afe45400db1d64972648cf58bb85",
+            "size": 295035921,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "e293e09f14225b6dd96cd1c7c79614c567407c1c71e8953fd36cc7dd5823c1b9",
+            "size": 996952,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "451c53393b7e194cdf25b9c34465c273b6a7eea6dcd5a188c4541e939203ed06",
+            "size": 312511971,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "598f540157d2f55da5000b9acbcd33d2d958540c0636fdacbf1818d869c6f497",
+            "size": 991592,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "78c1ad9db90d12537cb94debecfff3f2074d290f58189b26807bfdec78353adf",
+            "size": 309775091,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gimp/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "gimp",
+      "package_id": "tech.ula.gimp",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Gimp"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "e48ab3c3717e247d9e204b2b5f8907df1deafc78239478c247df0963d6d9a8fe",
+            "size": 886697,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "d18352c059b3e459f43a3865535336b939ab67aa01d103e5ce007988574d7295",
+            "size": 258012450,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "a5a52f564eb7a1b8ac9e3e32934d8751ae32a10c08b252890c43465fac265f2c",
+            "size": 983726,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "4ceb65410f9b6b66b28a65ecd78e628f9719b090b0406f89f12dd9eee5e455a7",
+            "size": 274142183,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "262fd1a38f20dcd8bb5e5b8b74f731c12fa055429b7d01c619ef5d863b3530cb",
+            "size": 1071379,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "24c91b7eef8a28a3b64c9c893ab3b94aead84c0476a4ad5b6daaad9403e4e7d0",
+            "size": 288187265,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "3b51c69dc67cf368034edc5a6841c3ea4c311d26aa03f2194be52db995399109",
+            "size": 1035900,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "ec9ed218dcdd3ee6ae6d8d4a48f2e9e4f8e91d101ed9a862aa86546729d8f640",
+            "size": 283309072,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Gnuplot/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "gnuplot",
+      "package_id": "tech.ula.gnuplot",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Gnuplot"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "f9f3bf07019a0fcfafbb137a7f3846abd95164d0b3edee40666aefb9d06262d6",
+            "size": 817488,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "94cf6492acef8fc0db4064275e21f3428287ce998217f2c2dea2580d34cb603d",
+            "size": 158108543,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "acae2661720f582315f18b38f27a0e454da60e81884154e91ccfaad94276799f",
+            "size": 942475,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "3d9e7f5a15b513f065b237ea2fb838edd924705a2a94629c001aa2452d1b4038",
+            "size": 165657794,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "c5342b177fd6de02e95826734e8d18b8fe6176f5de1a8086200f276529d4d944",
+            "size": 996273,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "073eceee9cd7690523df08ee4ab08c1d24ef0cdac25759048a1092bdd282be13",
+            "size": 174853991,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "15d4684964199b7357ca1a5a0b9449bf42cb5179e548e220b65dc4a9d5ccf9be",
+            "size": 991744,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "3ede6027cbe94adc7ede35322038bf89a22c65e29c013024a49f02b37616a644",
+            "size": 172801103,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-IDLE/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "idle",
+      "package_id": "tech.ula.idle",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-IDLE"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "ca3aea92451b591447b8aa5b9c0eefaf1540c32bd39f3326f354b86f9c991361",
+            "size": 817460,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "ee159efcd9c42f9670774b2d914be5917e0b341d3299c7cfa7f335089ee43b4e",
+            "size": 269221127,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "4512619806bea35cf168e457373d4e3a984d727be3423539e530e69ae293ce39",
+            "size": 941983,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "cb7698b9fcc4dfcbb25a78feab1538a48883a3aae49ec6a5ed96500e18817cac",
+            "size": 281762691,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "a17362bf497c520a2f655b94cfadffcefc7bbe6c6818506ba613c7de74f98724",
+            "size": 996954,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "8208aa6fd092da06a6f0d237bb6cca29bd2a07a67e3d5a60e65b3116b72d82f3",
+            "size": 295196776,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "aeb26b3b72303c73da64248a6c0e7a1c0814f599a27d148834ca4093fa849798",
+            "size": 991592,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "1cf0fa7622c07fc28c04fa7c9eb8e711cdd13be4d312719da15d79263debd896",
+            "size": 294904160,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-Inkscape/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "inkscape",
+      "package_id": "tech.ula.inkscape",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-Inkscape"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "78039f89759a3204a49bf7acd0fcc7ab7eb1d01bde52b50b845306d3111892ca",
+            "size": 886700,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "4b6bdb50d89e786d8903011c8e9c3a077450ac5f2b5c260fd2dbdec49576477d",
+            "size": 386273967,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "3dbcdf53ecc02d12cfba6cdf15f2b00cebdb890864faa11abeda73d03083fe1e",
+            "size": 983722,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "10d924c0b3ce466e42476db08753911d5c594b55c1c8268fcd57956c53a88af5",
+            "size": 395599983,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "ddf3dc14cace49df4987901f3b2ab65be2d57a42c1cd90724d2d1f51e38f31f2",
+            "size": 1071382,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "fe942c9d8581e728c47fe2eca927c097364523ad1632893b451c6a82c86e4b1f",
+            "size": 433737310,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "8780319d68bca1140c878161765ed542be4012cca98da37304b486651f77fa0c",
+            "size": 1035903,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "c9dbab386ec47d3159dc314309bb621e2895f3c91efa33ed476184eaefd3fa7a",
+            "size": 409299124,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-LibreDocs/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "libredocs",
+      "package_id": "tech.ula.libredocs",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-LibreDocs"
+    },
+    {
+      "abis": {
+        "arm": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "0fe1dd0e9beec50a811f48b228aecd388874b1cff8b38b25669a52070eafcbb3",
+            "size": 817491,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/arm-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "3dd0157d4808c1805576c497f68c3a2cfb0fefc4c87c3623b7151a9882739050",
+            "size": 283341995,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/arm-rootfs.tar.gz"
+          }
+        },
+        "arm64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "arm64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "da26f1898146f7961b878f4029373b039a9e4c9628d060d8d5b26db6aa8e55af",
+            "size": 942472,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/arm64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "arm64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "bec2578a3e34994dfe660e9e27ed9e9518de0045764152ea1b400ac1c8595ddf",
+            "size": 303106840,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/arm64-rootfs.tar.gz"
+          }
+        },
+        "x86": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "4c06080a058f82b3a98256343be061142c5db18139bb14fa4bbd04473b09c577",
+            "size": 996275,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/x86-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "85e8391c7d7c7d7ee0fbb86ffefc52c5d6f222c1963e26594289ce030643df17",
+            "size": 326271252,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/x86-rootfs.tar.gz"
+          }
+        },
+        "x86_64": {
+          "asset_list": [
+            "addNonRootUser.sh",
+            "busybox",
+            "extractFilesystem.sh",
+            "ld.so.preload",
+            "libdisableselinux.so",
+            "nosudo",
+            "startSSHServer.sh",
+            "startVNCServer.sh",
+            "startVNCServerStep2.sh",
+            "startXSDLServer.sh",
+            "startXSDLServerStep2.sh",
+            "userland_profile.sh"
+          ],
+          "assets.tar.gz": {
+            "filename": "x86_64-assets.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "2234e2d6e56b061df83fba06a1d74e87fe6d77ef2ae292da28834d58a1a8224c",
+            "size": 991740,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/x86_64-assets.tar.gz"
+          },
+          "rootfs.tar.gz": {
+            "filename": "x86_64-rootfs.tar.gz",
+            "release": "v0.0.1",
+            "sha256": "35bef8a282f79b2cfed719e82709a0bf461c95642525df72d9568a5739e79b59",
+            "size": 319621510,
+            "url": "https://github.com/CypherpunkArmory/UserLAnd-Assets-R/releases/download/v0.0.1/x86_64-rootfs.tar.gz"
+          }
+        }
+      },
+      "id": "r",
+      "package_id": "tech.ula.r",
+      "repository": "CypherpunkArmory/UserLAnd-Assets-R"
+    }
+  ],
+  "schema_version": 1
+}

@@ -20,6 +20,30 @@
       "sha256": "c71eac02b43f62473c1ea14771c7ca00ff3a17e22084bd817257be5d949394ca"
     },
     {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/DownloadJournal.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/DownloadJournal.kt",
+      "sha256": "57949156352e9ef00d297992f6c83043a477ccdd1027774fbd458c7768e193af"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/ResumableAssetTransfer.kt",
+      "sha256": "4ce307a289dcb33d03bdbe07e265ab07690ee097783a19f2ca9a4a635f31ba07"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3DownloadJournalTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3DownloadJournalTest.kt",
+      "sha256": "b2426b88edc2eaa75aa13637b051084a5683484538692e35809bc3d0c02fd50d"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3ResumableAssetTransferTest.kt",
+      "sha256": "135005827a8d13838e0a2906faf5ab1ea19c867921cdf4515b1112e972f4ddeb"
+    },
+    {
       "type": "replace_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/FilesystemManager.kt",
       "source": "compat/r3/java/tech/ula/library/utils/FilesystemManager.kt",
@@ -86,6 +110,92 @@
       "old": "        <service\n            android:name=\".ServerService\"\n            android:stopWithTask=\"true\" />",
       "new": "        <service\n            android:name=\".ServerService\"\n            android:foregroundServiceType=\"specialUse\"\n            android:stopWithTask=\"true\">\n            <property\n                android:name=\"android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE\"\n                android:value=\"User-started Linux, SSH, and VNC session runtime\" />\n        </service>",
       "count": 1
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+      "source": "compat/r3/java/tech/ula/library/model/repositories/LockedPayloadCatalog.kt",
+      "sha256": "226fe5e119b7d53936a3553512049a1813ba34275eebae09a0ff42ff043928da"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadPlanner.kt",
+      "sha256": "ee47a0e46a0bc2291948f7b135ac72b04125d57a0d120a02740a54013bf07184"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadRunner.kt",
+      "sha256": "24eb75e618f669eab4d04c2e4c860df1da8ac291c3f1518ab09251cfade46b04"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadSignals.kt",
+      "sha256": "2696eae886650eee249affb583f27c79c4a699a137e1db59371155497b56cb37"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/assets/r3-payloads.json",
+      "source": "compat/r3/assets/r3-payloads.json",
+      "sha256": "369b5347211d3d9c0a1ac39445b34e35a4a53f86e65531165f80334539fb86a0"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/AssetDownloadService.kt",
+      "source": "compat/r3/java/tech/ula/library/AssetDownloadService.kt",
+      "sha256": "fc5398e2d7da187f9a91dbb034b476dea98212c7a89d261d7e03e31f65844700"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/model/repositories/R3LockedPayloadCatalogTest.kt",
+      "source": "compat/r3/test/tech/ula/library/model/repositories/R3LockedPayloadCatalogTest.kt",
+      "sha256": "45508e6cf56eff426fb987be7371fb8c123144b3d2dd930d3cabe4ef7af84598"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadPlannerTest.kt",
+      "sha256": "bd8372bf5d5d7dba48ea94c563dc5eb0250cf972785c938bf4036e2ebfa3afe3"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadRunnerTest.kt",
+      "sha256": "06b00b9202671e998a9e6e04246451710800651c41ed1c38d1131d365b8e666c"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
+      "sha256": "dfd33c5e0b404129545907ffc59630d161fdcf2e77dcf42395ab9e93e9e15fa8"
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n",
+      "text": "    <uses-permission android:name=\"android.permission.FOREGROUND_SERVICE_DATA_SYNC\" />\n",
+      "count": 1
+    },
+    {
+      "type": "insert_after",
+      "path": "UserLAndLibrary/app/src/main/AndroidManifest.xml",
+      "anchor": "        <service\n            android:name=\".ServerService\"\n            android:foregroundServiceType=\"specialUse\"\n            android:stopWithTask=\"true\">\n            <property\n                android:name=\"android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE\"\n                android:value=\"User-started Linux, SSH, and VNC session runtime\" />\n        </service>",
+      "text": "\n\n        <service\n            android:name=\".AssetDownloadService\"\n            android:exported=\"false\"\n            android:foregroundServiceType=\"dataSync\" />",
+      "count": 1
+    },
+    {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloader.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/AssetDownloader.kt",
+      "old_sha256": "767ff99b824af4fc73fa303dd4be042d4ac3eabd893a394bd3bdce52fc3ada8e"
+    },
+    {
+      "type": "replace_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/AssetDownloaderTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/AssetDownloaderTest.kt",
+      "old_sha256": "a08cc9724dd44dcb7750728d5a23fb9d200d0e1b3f705d86e37a820522959b1f"
     },
     {
       "type": "replace",
@@ -344,6 +454,62 @@
       "path": "UserLAndLibrary/remote-desktop-clients/remoteClientLib/jni/libs/deps/FreeRDP/client/Android/Studio/freeRDPCore/build.gradle",
       "anchor": "android {\n",
       "text": "    namespace 'com.freerdp.freerdpcore'\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "import android.app.DownloadManager\n",
+      "new": "",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "    private val downloadBroadcastReceiver = object : BroadcastReceiver() {\n        override fun onReceive(context: Context, intent: Intent) {\n            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)\n            if (id == -1L) return\n            else viewModel.submitCompletedDownloadId(id)\n        }\n    }\n\n",
+      "new": "    private var assetDownloadRegistration: AssetDownloadSignals.Registration? = null\n\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager\n        val downloadManagerWrapper = DownloadManagerWrapper(downloadManager, this)\n        val assetDownloader = AssetDownloader(assetPreferences, downloadManagerWrapper, ulaFiles)",
+      "new": "        val assetDownloader = AssetDownloader(assetPreferences, ulaFiles, applicationContext)",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        val downloadFilter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\n            registerReceiver(\n                downloadBroadcastReceiver,\n                downloadFilter,\n                Context.RECEIVER_EXPORTED\n            )\n        } else {\n            registerReceiver(downloadBroadcastReceiver, downloadFilter)\n        }\n",
+      "new": "        assetDownloadRegistration = AssetDownloadSignals.observe {\n            runOnUiThread { viewModel.submitCompletedDownloadId(0L) }\n        }\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "            is SessionSelected -> currentState is WaitingForSessionSelection\n",
+      "new": "            is SessionSelected -> currentState is WaitingForSessionSelection ||\n                (currentState is DownloadingAssets &&\n                    assetDownloader.cachedSessionId() == event.session.id)\n",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "    private suspend fun handleSessionSelected(session: Session) {\n        if (activeSessions.isNotEmpty()) {",
+      "new": "    private suspend fun handleSessionSelected(session: Session) {\n        // Reattach to work already running for this session rather than starting\n        // its setup over from the beginning.\n        if (assetDownloader.downloadStateHasBeenCached() &&\n            assetDownloader.cachedSessionId() == session.id) {\n            handleAssetDownloadState(assetDownloader.syncStateWithCache())\n            return\n        }\n\n        if (activeSessions.isNotEmpty()) {",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/model/state/SessionStartupFsm.kt",
+      "old": "        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "new": "        assetDownloader.rememberSelection(session.id, filesystem.id)\n        state.postValue(SessionIsReadyForPreparation(session, filesystem))\n    }",
+      "count": 1
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "old": "        unregisterReceiver(downloadBroadcastReceiver)\n",
+      "new": "        assetDownloadRegistration?.cancel()\n        assetDownloadRegistration = null\n",
       "count": 1
     }
   ]
