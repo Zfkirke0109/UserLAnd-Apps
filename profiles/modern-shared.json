@@ -630,6 +630,71 @@
       "count": 1,
       "old": "    private fun handleIllegalState(state: IllegalState) {",
       "new": "    private fun displayDownloadRetryDialog(state: DownloadRetryRequired) {\n        val reason = state.safeMessage.ifBlank {\n            getString(R.string.download_retry_message_generic)\n        }\n        val builder = AlertDialog.Builder(this)\n            .setTitle(R.string.download_retry_title)\n            .setMessage(getString(R.string.download_retry_message, reason))\n            .setPositiveButton(R.string.button_retry) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.retryDownloads()\n            }\n            // Cancel keeps the verified payloads on disk and returns to selection.\n            .setNegativeButton(R.string.button_cancel) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.cancelSetup()\n            }\n        if (state.canRepair) {\n            builder.setNeutralButton(R.string.button_repair) { dialog, _ ->\n                dialog.dismiss()\n                viewModel.repairFilesystem()\n            }\n        }\n        builder.setCancelable(false).create().show()\n    }\n\n    private fun handleIllegalState(state: IllegalState) {"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/CreatorLinks.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/CreatorLinks.kt",
+      "sha256": "221494faf0f3d80236fe132dbacf1d1c87cb11f58f537f0847cf9eb656d9a304"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/CreatorSupportPrompter.kt",
+      "source": "compat/r3/java/tech/ula/library/utils/CreatorSupportPrompter.kt",
+      "sha256": "69fee1c451c2caa7bdc7c96e56f6a0c8f277d817631652f9a1b17c7e1548a6bd"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3CreatorSupportPrompterTest.kt",
+      "source": "compat/r3/test/tech/ula/library/utils/R3CreatorSupportPrompterTest.kt",
+      "sha256": "2d167f47ccf751748daad45f76167d3f02a6cefd5ab18420e6cbded2cba6b2d8"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/res/layout/dia_creator_support.xml",
+      "source": "compat/r3/res/layout/dia_creator_support.xml",
+      "sha256": "7d45fdd80e1b426bd6d1794dc37a16d861e18957feaaa640ca69e3061a4a5c4a"
+    },
+    {
+      "type": "copy_file",
+      "path": "UserLAndLibrary/app/src/main/res/drawable-nodpi/google_play_badge.png",
+      "source": "compat/r3/res/drawable-nodpi/google_play_badge.png",
+      "sha256": "f72611e2df8e88204009fd896d05d5e8e83c77009c63943bbffa169559934849"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/res/menu/menu_options.xml",
+      "count": 1,
+      "old": "    <item\n        android:id=\"@+id/terms_and_conditions\"\n        android:title=\"@string/toc\"\n        android:visible=\"@string/toc_enabled\"\n        app:showAsAction=\"never\" />\n",
+      "new": "    <item\n        android:id=\"@+id/terms_and_conditions\"\n        android:title=\"@string/toc\"\n        android:visible=\"@string/toc_enabled\"\n        app:showAsAction=\"never\" />\n\n    <item\n        android:id=\"@+id/about_and_support\"\n        android:title=\"@string/about_and_support\"\n        app:showAsAction=\"never\" />\n"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "    private val contributionPrompter by lazy {\n        ContributionPrompter(this)\n    }",
+      "new": "    private val contributionPrompter by lazy {\n        ContributionPrompter(this)\n    }\n\n    private val creatorSupportPrompter by lazy {\n        CreatorSupportPrompter(this)\n    }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "        if (item.itemId == R.id.clear_support_files) {\n            displayClearSupportFilesDialog()\n        }",
+      "new": "        if (item.itemId == R.id.clear_support_files) {\n            displayClearSupportFilesDialog()\n        }\n        if (item.itemId == R.id.about_and_support) {\n            creatorSupportPrompter.showFromMenu()\n        }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/MainActivity.kt",
+      "count": 1,
+      "old": "    private fun handleSessionHasBeenActivated() {\n        viewModel.handleSessionHasBeenActivated()\n        killProgressBar()\n    }",
+      "new": "    private fun handleSessionHasBeenActivated() {\n        viewModel.handleSessionHasBeenActivated()\n        killProgressBar()\n        creatorSupportPrompter.showAfterFirstSuccessfulSession()\n    }"
+    },
+    {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/src/main/res/values/strings.xml",
+      "count": 1,
+      "old": "    <string name=\"button_repair\">Repair</string>\n",
+      "new": "    <string name=\"button_repair\">Repair</string>\n    <string name=\"about_and_support\">About &amp; Support</string>\n    <string name=\"creator_support_title\">Support the creator</string>\n    <string name=\"creator_support_message\">%1$s is built on the open source UserLAnd project, and this launcher is a rebuild of an app its creator publishes on Google Play. If it is useful to you, the best way to support that work is to buy the official app.</string>\n    <string name=\"creator_support_badge_description\">Get it on Google Play</string>\n"
     }
   ]
 }

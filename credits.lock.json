@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "badge": {
+    "source": "https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png",
+    "path": "compat/r3/res/drawable-nodpi/google_play_badge.png",
+    "size": 4904,
+    "sha256": "f72611e2df8e88204009fd896d05d5e8e83c77009c63943bbffa169559934849",
+    "note": "Google's official Get it on Google Play badge, used unmodified to link to a Play listing."
+  },
+  "apps": [
+    {
+      "id": "foxbox",
+      "package_id": "tech.ula.foxbox_pro",
+      "display_name": "FoxBox",
+      "play_package": "tech.ula.foxbox_pro"
+    },
+    {
+      "id": "andacious",
+      "package_id": "tech.ula.andacious",
+      "display_name": "Andacious",
+      "play_package": "tech.ula.andacious"
+    },
+    {
+      "id": "gnuplot",
+      "package_id": "tech.ula.gnuplot",
+      "display_name": "Gnuplot",
+      "play_package": "tech.ula.gnuplot"
+    },
+    {
+      "id": "r",
+      "package_id": "tech.ula.r",
+      "display_name": "R",
+      "play_package": "tech.ula.r"
+    },
+    {
+      "id": "libredocs",
+      "package_id": "tech.ula.libredocs",
+      "display_name": "LibreDocs",
+      "play_package": "tech.ula.libredocs"
+    },
+    {
+      "id": "devstudio",
+      "package_id": "tech.ula.devstudio",
+      "display_name": "deVStudio",
+      "play_package": "tech.ula.devstudio"
+    },
+    {
+      "id": "inkscape",
+      "package_id": "tech.ula.inkscape",
+      "display_name": "Inkscape",
+      "play_package": "tech.ula.inkscape"
+    },
+    {
+      "id": "birdbox",
+      "package_id": "tech.ula.birdbox",
+      "display_name": "BirdBox",
+      "play_package": "tech.ula.birdbox"
+    },
+    {
+      "id": "gimp",
+      "package_id": "tech.ula.gimp",
+      "display_name": "GIMP",
+      "play_package": "tech.ula.gimp"
+    },
+    {
+      "id": "idle",
+      "package_id": "tech.ula.idle",
+      "display_name": "IDLE",
+      "play_package": "tech.ula.idle"
+    }
+  ]
+}

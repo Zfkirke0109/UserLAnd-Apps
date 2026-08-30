@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import hashlib
 import json
 import re
 import sys
@@ -113,8 +114,42 @@ def validate_contract(root: Path) -> list[str]:
     return errors
 
 
+def validate_credits(root: Path) -> list[str]:
+    """The bundled Play badge must be Google's asset, byte for byte."""
+    errors: list[str] = []
+    lock_path = root / "credits.lock.json"
+    if not lock_path.is_file():
+        return ["credits.lock.json is missing"]
+    try:
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        return [f"credits.lock.json is unreadable: {error}"]
+
+    badge = lock.get("badge", {})
+    badge_path = root / badge.get("path", "")
+    if not badge_path.is_file():
+        errors.append(f"badge is missing: {badge.get('path')}")
+    else:
+        data = badge_path.read_bytes()
+        if len(data) != badge.get("size"):
+            errors.append(
+                f"badge is {len(data)} bytes, locked at {badge.get('size')}"
+            )
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != badge.get("sha256"):
+            errors.append("badge SHA-256 does not match credits.lock.json")
+
+    packages = {app["package_id"] for app in lock.get("apps", [])}
+    for app in lock.get("apps", []):
+        if not app.get("play_package"):
+            errors.append(f"{app.get('id')} has no Play package to link to")
+    if len(packages) != 10:
+        errors.append(f"credits cover {len(packages)} packages, expected 10")
+    return errors
+
+
 def main() -> int:
-    errors = validate_contract(Path("."))
+    errors = validate_contract(Path(".")) + validate_credits(Path("."))
     if errors:
         for error in errors:
             print(error, file=sys.stderr)

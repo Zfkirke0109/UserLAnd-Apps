@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <ImageView
+        android:id="@+id/creator_support_icon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="16dp"
+        android:src="@mipmap/ic_main_launcher"
+        android:contentDescription="@string/app_name" />
+
+    <TextView
+        android:id="@+id/creator_support_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        tools:text="@string/creator_support_message" />
+
+    <!-- Google's official badge, unmodified, linking to the Play listing. -->
+    <ImageView
+        android:id="@+id/creator_support_badge"
+        android:layout_width="194dp"
+        android:layout_height="75dp"
+        android:layout_gravity="center_horizontal"
+        android:adjustViewBounds="true"
+        android:clickable="true"
+        android:focusable="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/google_play_badge"
+        android:contentDescription="@string/creator_support_badge_description" />
+
+</LinearLayout>

@@ -777,6 +777,60 @@ class CompatibilityTests(unittest.TestCase):
         ):
             self.assertIn(name, defined, name)
 
+    def test_r3_credits_lock_pins_the_official_badge_and_every_app(self):
+        lock = json.loads(Path("credits.lock.json").read_text(encoding="utf-8"))
+
+        badge = lock["badge"]
+        self.assertEqual(
+            "https://play.google.com/intl/en_us/badges/static/images/badges/"
+            "en_badge_web_generic.png",
+            badge["source"],
+        )
+        data = Path(badge["path"]).read_bytes()
+        self.assertEqual(badge["size"], len(data))
+        self.assertEqual(badge["sha256"], hashlib.sha256(data).hexdigest())
+        self.assertTrue(data.startswith(b"\x89PNG"), "the badge must be a PNG")
+
+        sources = json.loads(Path("sources.lock.json").read_text(encoding="utf-8"))
+        expected = {app["package_id"] for app in sources["apps"]}
+        credited = {app["package_id"] for app in lock["apps"]}
+        self.assertEqual(expected, credited, "every launcher must credit a creator")
+        for app in lock["apps"]:
+            self.assertTrue(app["play_package"], app["id"])
+
+    def test_r3_support_card_appears_only_after_a_session_starts(self):
+        profile = load_profile(Path("profiles/andacious.json"))
+        blob = "\n".join(json.dumps(op, sort_keys=True) for op in profile["operations"])
+
+        # Never during setup or a repair: only once a session has really started.
+        self.assertIn("killProgressBar()", blob)
+        self.assertIn("creatorSupportPrompter.showAfterFirstSuccessfulSession()", blob)
+        automatic = next(
+            op for op in profile["operations"]
+            if "showAfterFirstSuccessfulSession" in op.get("new", "")
+        )
+        self.assertIn("handleSessionHasBeenActivated", automatic["old"])
+
+        # And it stays reachable for good.
+        self.assertIn("creatorSupportPrompter.showFromMenu()", blob)
+        self.assertIn("@+id/about_and_support", blob)
+
+    def test_r3_creator_links_reach_the_listing_without_a_dead_end(self):
+        links = Path("compat/r3/java/tech/ula/library/utils/CreatorLinks.kt").read_text(encoding="utf-8")
+        self.assertIn('"market://details?id=$packageName"', links)
+        self.assertIn('"https://play.google.com/store/apps/details?id=$packageName"', links)
+
+        prompter = Path("compat/r3/java/tech/ula/library/utils/CreatorSupportPrompter.kt").read_text(encoding="utf-8")
+        # A device with no Play app still has to reach the listing.
+        self.assertIn("catch (err: ActivityNotFoundException)", prompter)
+        self.assertLess(prompter.index("CreatorLinks.market"), prompter.index("CreatorLinks.web"))
+
+    def test_r3_support_card_uses_each_apps_own_icon(self):
+        layout = Path("compat/r3/res/layout/dia_creator_support.xml").read_text(encoding="utf-8")
+        self.assertIn("@mipmap/ic_main_launcher", layout)
+        # The message names the app, so it cannot be bound statically.
+        self.assertNotIn('android:text="@string/creator_support_message"', layout)
+
     def test_devstudio_excludes_upstream_unsupported_x86_abi(self):
         profile = load_profile(Path("profiles/devstudio.json"))
 
