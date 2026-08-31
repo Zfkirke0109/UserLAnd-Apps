@@ -91,7 +91,8 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         }))
 
     def build_device(self, *, marker=True, anchors=True, parts=False,
-                     support=True, batch_state="COMPLETE", items=None):
+                     support=True, batch_state="COMPLETE", items=None,
+                     failure_marker=False):
         files = self.device / f"data/user/0/{PACKAGE}/files"
         fs = files / "1"
         (fs / "support").mkdir(parents=True)
@@ -99,6 +100,8 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         (files / "downloads/download-journal.json").write_text(journal(batch_state, items))
         if marker:
             (fs / "support/.success_filesystem_extraction").write_text("")
+        if failure_marker:
+            (fs / "support/.failure_filesystem_extraction").write_text("")
         if anchors:
             (fs / "bin").mkdir()
             (fs / "bin/sh").write_text("")
@@ -190,6 +193,25 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         result = self.run_gate()
         self.assertEqual(1, result.returncode)
         self.assertIn("support/", result.stderr)
+
+    def test_a_recorded_extraction_failure_is_reported_not_waited_out(self):
+        """The app writes a verdict either way.
+
+        Release run 5 spent the whole thirty-minute budget polling for a success
+        marker and then reported only that it had timed out. When the app has
+        already recorded a failure there is nothing left to wait for: stop at the
+        verdict, and say what was on disk when it was reached.
+        """
+        self.build_device(marker=False, failure_marker=True)
+        result = self.run_gate()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("recorded an extraction failure", result.stderr)
+        self.assertNotIn("timed out", result.stderr)
+        # The diagnosis has to reach the job log, because the evidence bundle is
+        # not always reachable when the diagnosis is what is needed.
+        self.assertIn("extraction diagnosis", result.stdout)
+        self.assertIn("extraction markers", result.stdout)
 
     def test_an_unfinished_transfer_is_rejected(self):
         self.build_device(parts=True)

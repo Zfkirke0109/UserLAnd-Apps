@@ -337,10 +337,18 @@ wait_for_condition() {
     if (( waited % 60 < POLL_INTERVAL_SECONDS )); then
       note "still waiting (${waited}s of ${timeout}s): $description"
       assert_no_forbidden_signatures
+      # A minute of "still waiting" that says nothing about what the app is
+      # doing is what made the last extraction timeout unanswerable.
+      [[ -z $PROGRESS_HOOK ]] || "$PROGRESS_HOOK"
     fi
   done
+  [[ -z $PROGRESS_HOOK ]] || "$PROGRESS_HOOK"
   fail "timed out after ${timeout}s waiting for: $description"
 }
+
+# Named by wait_for_condition once a minute, so a long wait reports what the app
+# is actually doing rather than only that it has not finished.
+PROGRESS_HOOK=""
 
 # Signatures that mean the run is already lost. Checked while waiting, so a
 # crashed setup fails in seconds rather than at the end of the timeout.
@@ -394,6 +402,51 @@ downloads_are_complete() {
 
 extraction_succeeded() {
   [[ -n $(adb shell find "$APP_FILES" -name '.success_filesystem_extraction' -print -quit 2>/dev/null | tr -d '\r') ]]
+}
+
+extraction_failure_marker() {
+  adb shell find "$APP_FILES" -name '.failure_filesystem_extraction' -print -quit 2>/dev/null \
+    | tr -d '\r'
+}
+
+# The app records a verdict either way, so waiting out the full timeout for a
+# success marker after it has already written a failure marker spends half an
+# hour to learn nothing. Stop at the verdict and report the reason.
+extraction_has_settled() {
+  if extraction_succeeded; then
+    return 0
+  fi
+  local marker
+  marker=$(extraction_failure_marker)
+  if [[ -n $marker ]]; then
+    report_extraction_diagnosis
+    fail "setup recorded an extraction failure at $marker"
+  fi
+  return 1
+}
+
+# Written to the job log, not only to the evidence bundle: the bundle is not
+# always reachable when the diagnosis is needed.
+report_extraction_diagnosis() {
+  note "extraction diagnosis for $PACKAGE_ID"
+  note "  rootfs archives on disk:"
+  adb shell "find $APP_FILES -name 'rootfs.tar.gz' -exec ls -l {} \; 2>/dev/null" \
+    | tr -d '\r' | sed 's/^/    /' || true
+  note "  extraction markers:"
+  adb shell "find $APP_FILES -name '.success_filesystem_extraction' \
+    -o -name '.failure_filesystem_extraction' 2>/dev/null" \
+    | tr -d '\r' | sed 's/^/    /' || true
+  note "  entries unpacked under each filesystem root:"
+  adb shell "for d in $APP_FILES/[0-9]*; do \
+    [ -d \"\$d\" ] && echo \"\$d \$(find \"\$d\" | wc -l)\"; done 2>/dev/null" \
+    | tr -d '\r' | sed 's/^/    /' || true
+  note "  busybox and tar processes:"
+  adb shell "ps -A -o NAME 2>/dev/null | grep -iE 'busybox|tar|proot'" \
+    | tr -d '\r' | sed 's/^/    /' || true
+  note "  last app-scoped log lines:"
+  adb logcat -d 2>/dev/null \
+    | grep -iE 'extract|rootfs|busybox|tar:|filesystem' \
+    | tail -40 | sed 's/^/    /' || true
 }
 
 # Every success marker must sit beside a filesystem that actually works. This is
@@ -553,8 +606,10 @@ assert_payload_digests_match_lock
 # assertion would pass for the wrong reason.
 assert_no_pending_transfers
 
+PROGRESS_HOOK=report_extraction_diagnosis
 wait_for_condition "the filesystem to finish extracting" "$SETUP_TIMEOUT_SECONDS" \
-  extraction_succeeded
+  extraction_has_settled
+PROGRESS_HOOK=""
 
 assert_no_forbidden_signatures
 assert_filesystem_anchors
