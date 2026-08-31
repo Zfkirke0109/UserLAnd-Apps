@@ -213,6 +213,24 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertIn("Low available storage",
                       (self.evidence / "dialogs-cleared.txt").read_text())
 
+    def test_an_illegal_state_dialog_is_reported_not_dismissed(self):
+        """A failure report is not an acknowledgement to tap past.
+
+        Run 7 raised, one minute in, a dialog reading "gnuplot has entered an
+        illegal state! Failed to extract filesystem. Failure reason: [The
+        rootfs.tar.gz download could not be read (283309072 bytes on disk,
+        Command failed with: 159).]" The gate tapped OK and went on waiting for a
+        setup that had already given up, so the one statement of what went wrong
+        was dismissed and the run spent its whole budget saying nothing.
+        """
+        self.build_device()
+        result = self.run_gate(blocking_dialog_during_extraction=True,
+                               dialog_text="gnuplot has entered an illegal state!")
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("cannot continue past", result.stderr)
+        self.assertIn("illegal state", result.stderr)
+
     def test_setup_resetting_itself_is_reported_not_waited_out(self):
         """The quiet exit from losing the session leaves nothing to find.
 
