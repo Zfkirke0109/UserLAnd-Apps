@@ -250,6 +250,20 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("forbidden runtime signature", result.stderr)
 
+    def test_setup_losing_its_session_is_rejected(self):
+        """Setup that loses the session it was preparing resets itself silently.
+
+        No crash, no illegal transition, no extraction marker — the run simply
+        stops, which is why runs 5 and 6 waited out the whole budget without
+        anything to report.
+        """
+        self.build_device()
+        result = self.run_gate(
+            logcat="State observed MainVM: NoSessionSelectedWhenTransitionNecessary"
+        )
+        self.assertEqual(1, result.returncode)
+        self.assertIn("forbidden runtime signature", result.stderr)
+
     def test_a_fatal_exception_in_the_target_app_is_rejected(self):
         self.build_device()
         result = self.run_gate(

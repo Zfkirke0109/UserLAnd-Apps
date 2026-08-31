@@ -363,9 +363,12 @@ assert_no_forbidden_signatures() {
     > "$EVIDENCE_DIR/crash-scan.txt" 2>&1 \
     || fail "app-scoped fatal, ANR or force-finish detected"
 
+  # NoSessionSelectedWhenTransitionNecessary means setup lost the session it was
+  # preparing and reset itself. Nothing crashes and no marker is written, so
+  # without this the run just waits out its whole budget in silence.
   local forbidden
   forbidden=$(grep -nE \
-    'CANNOT LINK EXECUTABLE|library ".*" not found|addNonRootUser\.sh: not found|IncorrectSessionTransition' \
+    'CANNOT LINK EXECUTABLE|library ".*" not found|addNonRootUser\.sh: not found|IncorrectSessionTransition|NoSessionSelectedWhenTransitionNecessary' \
     "$log" || true)
   if [[ -n $forbidden ]]; then
     printf '%s\n' "$forbidden" > "$EVIDENCE_DIR/forbidden-signatures.txt"
