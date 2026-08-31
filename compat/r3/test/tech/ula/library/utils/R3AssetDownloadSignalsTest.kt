@@ -59,6 +59,39 @@ class R3AssetDownloadSignalsTest {
     }
 
     @Test
+    fun aListenerRegisteringAfterTheBatchFinishedStillHearsAboutIt() {
+        // Release run 4: the rootfs took minutes, the activity was recreated
+        // while it downloaded, and the new listener registered after the batch
+        // was already complete. Nothing publishes again, so setup waited for a
+        // signal that had been and gone.
+        AssetDownloadSignals.publish(BatchSucceeded)
+
+        val heard = mutableListOf<BatchOutcome>()
+        AssetDownloadSignals.observe { outcome -> heard.add(outcome) }
+
+        assertEquals(listOf<BatchOutcome>(BatchSucceeded), heard)
+    }
+
+    @Test
+    fun aFailedBatchIsReplayedToo() {
+        AssetDownloadSignals.publish(BatchFailed("checksum", "rootfs"))
+
+        val heard = mutableListOf<BatchOutcome>()
+        AssetDownloadSignals.observe { outcome -> heard.add(outcome) }
+
+        assertEquals(listOf<BatchOutcome>(BatchFailed("checksum", "rootfs")), heard)
+    }
+
+    @Test
+    fun anIdleRegistryTellsAListenerNothing() {
+        // Nothing has happened yet, so there is nothing to replay.
+        val heard = mutableListOf<BatchOutcome>()
+        AssetDownloadSignals.observe { outcome -> heard.add(outcome) }
+
+        assertEquals(emptyList<BatchOutcome>(), heard)
+    }
+
+    @Test
     fun latestStartsIdleAndResets() {
         assertEquals(BatchIdle, AssetDownloadSignals.latest)
 

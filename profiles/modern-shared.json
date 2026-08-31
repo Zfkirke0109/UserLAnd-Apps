@@ -151,7 +151,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/main/java/tech/ula/library/utils/AssetDownloadSignals.kt",
       "source": "compat/r3/java/tech/ula/library/utils/AssetDownloadSignals.kt",
-      "sha256": "2696eae886650eee249affb583f27c79c4a699a137e1db59371155497b56cb37"
+      "sha256": "991b00ffd0a35b6aa55a9ce3fdaef69a076f6e6e4b9f9f0e978af405dd940eca"
     },
     {
       "type": "copy_file",
@@ -187,7 +187,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3AssetDownloadSignalsTest.kt",
-      "sha256": "dfd33c5e0b404129545907ffc59630d161fdcf2e77dcf42395ab9e93e9e15fa8"
+      "sha256": "ba7f09a6a7786b17ab907d569897d64578fc8bd87aa8ce181d0a1b9e600cff5b"
     },
     {
       "type": "insert_after",
