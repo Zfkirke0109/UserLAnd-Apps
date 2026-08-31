@@ -16,6 +16,20 @@ class WorkflowContractTests(unittest.TestCase):
             self.assertNotIn("matrix.app == 'foxbox'", text, name)
             self.assertIn("tools/stage_support_assets.py", text, name)
 
+    def test_the_emulator_has_room_for_a_root_filesystem(self):
+        """A first run cannot finish in a default userdata partition.
+
+        The root filesystem is 283MB compressed, is briefly on disk twice while
+        staging copies it to its destination, and unpacks to well over a
+        gigabyte. The pixel_2 profile's default partition holds none of that, and
+        the app raises a low-storage dialog under a gigabyte free, so the size
+        has to be stated rather than inherited.
+        """
+        text = Path(".github/workflows/upgrade-smoke.yml").read_text()
+        match = re.search(r"disk-size:\s*(\d+)G", text)
+        self.assertIsNotNone(match, "the emulator must be given an explicit disk size")
+        self.assertGreaterEqual(int(match.group(1)), 4)
+
     def test_release_gate_requires_twenty_runtime_evidence_bundles(self):
         text = Path(".github/workflows/upgrade-smoke.yml").read_text()
 

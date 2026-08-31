@@ -164,6 +164,12 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           profile: pixel_2
+          # A first run downloads a 283MB root filesystem, briefly holds it twice
+          # while staging, and unpacks it to well over a gigabyte. The pixel_2
+          # profile's default userdata partition cannot hold that, and the app
+          # raises a low-storage dialog under a gigabyte free, so without an
+          # explicit size the first run has never had room to finish.
+          disk-size: 8G
           disable-animations: true
           script: scripts/emulator_smoke.sh "${{ steps.meta.outputs.package }}" "$RUNNER_TEMP/old.apk" "$RUNNER_TEMP/new.apk" "evidence/${{ matrix.app }}-api${{ matrix.api-level }}" "${{ steps.meta.outputs.version_name }}" "${{ matrix.api-level }}"
 
