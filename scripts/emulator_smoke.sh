@@ -341,6 +341,10 @@ wait_for_condition() {
       # doing is what made the last extraction timeout unanswerable.
       [[ -z $PROGRESS_HOOK ]] || "$PROGRESS_HOOK"
     fi
+    # Setup asks for acknowledgement partway through, not only at the start:
+    # low storage, feedback and contribution prompts are all modal, and a wait
+    # that never clears them is waiting for a user who is not there.
+    clear_blocking_dialog || true
   done
   [[ -z $PROGRESS_HOOK ]] || "$PROGRESS_HOOK"
   fail "timed out after ${timeout}s waiting for: $description"
@@ -440,6 +444,8 @@ report_extraction_diagnosis() {
   adb shell "for d in $APP_FILES/[0-9]*; do \
     [ -d \"\$d\" ] && echo \"\$d \$(find \"\$d\" | wc -l)\"; done 2>/dev/null" \
     | tr -d '\r' | sed 's/^/    /' || true
+  note "  free storage (setup blocks on a dialog between 251MB and 1000MB free):"
+  adb shell "df -m /data 2>/dev/null | tail -1" | tr -d '\r' | sed 's/^/    /' || true
   note "  busybox and tar processes:"
   adb shell "ps -A -o NAME 2>/dev/null | grep -iE 'busybox|tar|proot'" \
     | tr -d '\r' | sed 's/^/    /' || true
@@ -543,6 +549,21 @@ tap_any_positive_dialog() {
     return 0
   fi
   return 1
+}
+
+# Nothing is dismissed silently: whatever the gate clears is recorded first, so
+# a genuine error dialog cannot be tapped away without leaving a trace.
+clear_blocking_dialog() {
+  local ui="$EVIDENCE_DIR/blocking-dialog.xml"
+  dump_ui "$ui" 2>/dev/null || return 1
+  grep -q 'resource-id="android:id/button1"' "$ui" || return 1
+
+  local text
+  text=$(grep -o 'text="[^"]*"' "$ui" | sed 's/^text="//; s/"$//' \
+    | grep -v '^$' | head -8 | paste -sd '|' -)
+  note "clearing a dialog that is blocking setup: ${text:-no text}"
+  printf '%s\n' "$text" >> "$EVIDENCE_DIR/dialogs-cleared.txt"
+  tap_any_positive_dialog
 }
 
 start_setup_from_ui() {

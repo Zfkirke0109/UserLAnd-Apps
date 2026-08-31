@@ -194,6 +194,25 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("support/", result.stderr)
 
+    def test_a_dialog_raised_during_a_wait_is_cleared_and_recorded(self):
+        """Setup asks for acknowledgement partway through, not only at the start.
+
+        Between 251MB and 1000MB free the app raises a modal low-storage dialog
+        and holds setup on it; the feedback and contribution prompts are modal
+        too. Release run 5 cleared dialogs only while starting setup, so once the
+        downloads finished nothing tapped anything and every job sat on the
+        dialog for the whole thirty-minute budget.
+        """
+        self.build_device()
+        result = self.run_gate(blocking_dialog_during_extraction=True)
+
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        self.assertIn("Runtime verified for", result.stdout)
+        # Nothing is tapped away silently.
+        self.assertIn("clearing a dialog that is blocking setup", result.stdout)
+        self.assertIn("Low available storage",
+                      (self.evidence / "dialogs-cleared.txt").read_text())
+
     def test_a_recorded_extraction_failure_is_reported_not_waited_out(self):
         """The app writes a verdict either way.
 

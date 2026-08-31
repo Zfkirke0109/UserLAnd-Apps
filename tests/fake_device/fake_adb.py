@@ -20,6 +20,14 @@ joined = " ".join(argv)
 
 # Both the runtime-permission controller and the All Files settings screen are
 # reported visible, so the r2 permission handoff runs to completion.
+BLOCKING_DIALOG = """<?xml version='1.0' encoding='UTF-8'?>
+<hierarchy rotation="0">
+  <node package="android" text="Low available storage" bounds="[0,400][1080,500]"/>
+  <node package="android" resource-id="android:id/button1" text="OK"
+        clickable="true" bounds="[600,900][900,1000]"/>
+</hierarchy>
+"""
+
 VISIBLE_WINDOWS = """  Window #0 Window{aaaa u0 com.android.permissioncontroller/GrantActivity}:
     mViewVisibility=0x0 mHasSurface=true isReadyForDisplay()=true
   Window #1 Window{bbbb u0 com.android.settings/ManageAppsActivity}:
@@ -38,6 +46,8 @@ def device_path(path: str) -> Path:
 # Progress is time-free: each poll advances a counter, and the scenario says how
 # many polls the download and extraction take.
 state_file = root / ".polls"
+dialog_cleared = root / ".dialog-cleared"
+extraction_reached = root / ".extraction-reached"
 def bump(name: str) -> int:
     counts = json.loads(state_file.read_text()) if state_file.exists() else {}
     counts[name] = counts.get(name, 0) + 1
@@ -86,7 +96,18 @@ elif argv[:1] == ["shell"]:
         emit(scenario.get("launcher", "tech.ula/.MainActivity"))
     elif command.startswith("uiautomator dump"):
         Path(root / "sdcard/userland-window.xml").parent.mkdir(parents=True, exist_ok=True)
-        (root / "sdcard/userland-window.xml").write_text(scenario.get("ui", ""))
+        screen = scenario.get("ui", "")
+        # Setup can put a modal dialog up partway through and wait on it. It
+        # stays up until something taps it, and nothing behind it progresses.
+        if (scenario.get("blocking_dialog_during_extraction")
+                and extraction_reached.exists() and not dialog_cleared.exists()):
+            screen = BLOCKING_DIALOG
+        (root / "sdcard/userland-window.xml").write_text(screen)
+    elif command.startswith("input tap"):
+        # Only a tap that lands after setup has reached extraction clears the
+        # dialog raised there; the taps that started setup cleared other ones.
+        if extraction_reached.exists():
+            dialog_cleared.write_text("")
     elif command.startswith("cat "):
         target = device_path(command.split(" ", 1)[1].strip().strip("'\""))
         if not target.exists():
@@ -107,6 +128,13 @@ elif argv[:1] == ["shell"]:
         pattern = match.group(2)
         # Extraction finishes only after the scenario's configured number of polls.
         if pattern == ".success_filesystem_extraction":
+            # The storage check runs once the downloads are in, so the dialog
+            # goes up when the gate starts waiting on extraction, and extraction
+            # cannot finish while setup is held on it.
+            extraction_reached.write_text("")
+            if (scenario.get("blocking_dialog_during_extraction")
+                    and not dialog_cleared.exists()):
+                sys.exit(0)
             if bump("extract") < scenario.get("extract_polls", 1):
                 sys.exit(0)
         results = []
