@@ -213,6 +213,21 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertIn("Low available storage",
                       (self.evidence / "dialogs-cleared.txt").read_text())
 
+    def test_a_failure_before_the_extraction_wait_still_reports_the_device(self):
+        """The diagnosis has to run wherever the failure happens.
+
+        Run 8 failed during the local copy, forty seconds into setup and well
+        before the extraction wait was entered, so the report that would have
+        said how much storage was left and what was on disk never ran at all.
+        """
+        self.build_device(parts=True)
+        result = self.run_gate()
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("unfinished transfers", result.stderr)
+        self.assertIn("extraction diagnosis", result.stdout)
+        self.assertIn("free storage", result.stdout)
+
     def test_an_illegal_state_dialog_is_reported_not_dismissed(self):
         """A failure report is not an acknowledgement to tap past.
 

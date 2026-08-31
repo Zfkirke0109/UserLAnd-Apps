@@ -35,6 +35,13 @@ note() {
 mkdir -p "$EVIDENCE_DIR"
 
 fail() {
+  # Every failure reports the state of the device, not only the ones that happen
+  # to occur inside the extraction wait. Run 8 failed during the local copy,
+  # before that wait was ever entered, so the diagnosis it needed never ran and
+  # the evidence bundle holding it cannot always be reached.
+  if [[ -n ${DIAGNOSIS_READY:-} && -z ${DIAGNOSIS_RUNNING:-} ]]; then
+    DIAGNOSIS_RUNNING=1 report_extraction_diagnosis || true
+  fi
   echo "runtime verification failed: $*" >&2
   exit 1
 }
@@ -639,6 +646,7 @@ start_setup_from_ui() {
 # the path r2 never covered: a genuine clean install that has to download,
 # verify, extract, and reach a usable session.
 
+DIAGNOSIS_READY=1
 adb root >/dev/null 2>&1 || true
 adb wait-for-device
 # Without root the gate cannot read the app's private files, and an extraction
