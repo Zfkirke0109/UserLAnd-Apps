@@ -73,10 +73,7 @@ class AssetDownloader(
 
     fun cachedFilesystemId(): Long = journal.read()?.filesystemId ?: UNKNOWN_ID
 
-    fun downloadStateHasBeenCached(): Boolean {
-        val batch = journal.read() ?: return false
-        return batch.state != DownloadBatchState.COMPLETE
-    }
+    fun downloadStateHasBeenCached(): Boolean = hasCachedStateToSync(journal.read())
 
     fun syncStateWithCache(): AssetDownloadState {
         val batch = journal.read() ?: return CacheSyncAttemptedWhileCacheIsEmpty

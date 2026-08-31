@@ -8,9 +8,12 @@ import java.util.concurrent.CopyOnWriteArrayList
  *
  * The service and the activity share a process, so a listener registry does the
  * whole job that a local broadcast would, without the deprecated dependency or the
- * Intent round trip. Delivery is best effort by design: the journal, not this, is
- * the source of truth, so a listener that was not registered when an outcome
- * arrived recovers by reading state rather than by replaying signals.
+ * Intent round trip. The journal remains the source of truth, but delivery cannot
+ * be best effort: a large asset takes minutes, and if the activity is recreated
+ * while it downloads, the new listener registers after the batch has already
+ * finished. Nothing publishes again, and setup waits for a signal that has been
+ * and gone. So the most recent outcome is replayed to a listener when it
+ * registers, which is what makes a listener that arrived late still correct.
  */
 object AssetDownloadSignals {
 
@@ -34,6 +37,11 @@ object AssetDownloadSignals {
 
     fun observe(listener: Listener): Registration {
         listeners.add(listener)
+        // A listener that registers after the batch finished would otherwise
+        // never hear about it: publish only reaches listeners present at the
+        // time, and a finished batch never publishes again.
+        val known = latest
+        if (known !is BatchIdle) listener.onDownloadState(known)
         return Registration(listener)
     }
 
