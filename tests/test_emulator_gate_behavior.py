@@ -213,6 +213,43 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertIn("Low available storage",
                       (self.evidence / "dialogs-cleared.txt").read_text())
 
+    def test_an_illegal_state_dialog_is_reported_not_dismissed(self):
+        """A failure report is not an acknowledgement to tap past.
+
+        Run 7 raised, one minute in, a dialog reading "gnuplot has entered an
+        illegal state! Failed to extract filesystem. Failure reason: [The
+        rootfs.tar.gz download could not be read (283309072 bytes on disk,
+        Command failed with: 159).]" The gate tapped OK and went on waiting for a
+        setup that had already given up, so the one statement of what went wrong
+        was dismissed and the run spent its whole budget saying nothing.
+        """
+        self.build_device()
+        result = self.run_gate(blocking_dialog_during_extraction=True,
+                               dialog_text="gnuplot has entered an illegal state!")
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("cannot continue past", result.stderr)
+        self.assertIn("illegal state", result.stderr)
+
+    def test_setup_resetting_itself_is_reported_not_waited_out(self):
+        """The quiet exit from losing the session leaves nothing to find.
+
+        One route logs NoSessionSelectedWhenTransitionNecessary and is caught as
+        a forbidden signature. The other posts ProgressBarOperationComplete and
+        resets: no crash, no illegal transition, no extraction marker. Support
+        files are never cleared during a first run, so during the extraction wait
+        that state can only mean setup ended without attempting extraction.
+        """
+        self.build_device(marker=False)
+        result = self.run_gate(
+            logcat="State observed MainVM: ProgressBarOperationComplete"
+        )
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("reset itself", result.stderr)
+        self.assertNotIn("timed out", result.stderr)
+        self.assertIn("extraction diagnosis", result.stdout)
+
     def test_a_recorded_extraction_failure_is_reported_not_waited_out(self):
         """The app writes a verdict either way.
 

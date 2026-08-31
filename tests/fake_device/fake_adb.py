@@ -101,7 +101,9 @@ elif argv[:1] == ["shell"]:
         # stays up until something taps it, and nothing behind it progresses.
         if (scenario.get("blocking_dialog_during_extraction")
                 and extraction_reached.exists() and not dialog_cleared.exists()):
-            screen = BLOCKING_DIALOG
+            screen = BLOCKING_DIALOG.replace(
+                "Low available storage",
+                scenario.get("dialog_text", "Low available storage"))
         (root / "sdcard/userland-window.xml").write_text(screen)
     elif command.startswith("input tap"):
         # Only a tap that lands after setup has reached extraction clears the

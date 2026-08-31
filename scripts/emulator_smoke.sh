@@ -429,6 +429,15 @@ extraction_has_settled() {
     report_extraction_diagnosis
     fail "setup recorded an extraction failure at $marker"
   fi
+  # Losing the session mid-setup has two exits. One logs an illegal state and is
+  # caught as a forbidden signature; the other just posts
+  # ProgressBarOperationComplete and resets, leaving nothing to find. Support
+  # files are never cleared during a first run, so that state can only mean setup
+  # ended here without ever attempting extraction.
+  if adb logcat -d 2>/dev/null | grep -aq 'ProgressBarOperationComplete'; then
+    report_extraction_diagnosis
+    fail "setup ended without attempting extraction (it reset itself)"
+  fi
   return 1
 }
 
@@ -455,6 +464,18 @@ report_extraction_diagnosis() {
     | tr -d '\r' | sed 's/^/    /' || true
   note "  free storage (setup blocks on a dialog between 251MB and 1000MB free):"
   adb shell "df /data 2>/dev/null" | tr -d '\r' | sed 's/^/    /' || true
+  # The failure is reported as an exit code, so read it here directly rather
+  # than inferring it: this is the same command the app runs to validate the
+  # archive before unpacking it.
+  note "  host busybox reading the archive it must unpack:"
+  adb shell "for a in \$(find $APP_FILES -name '*rootfs.tar.gz*' 2>/dev/null); do \
+    b=\$(find $APP_FILES -name 'lib_busybox_static.so' -o -name 'busybox_static' \
+      2>/dev/null | head -1); \
+    [ -n \"\$b\" ] || b=busybox_static; \
+    echo \"\$b tar -tzf \$a\"; \
+    \$b tar -tzf \"\$a\" 2>&1 | head -3; \
+    echo \"  exit \$?\"; done" \
+    | tr -d '\r' | sed 's/^/    /' || true
   note "  busybox and tar processes:"
   adb shell "ps -A -o NAME 2>/dev/null | grep -iE 'busybox|tar|proot'" \
     | tr -d '\r' | sed 's/^/    /' || true
@@ -576,8 +597,18 @@ clear_blocking_dialog() {
   local text
   text=$(grep -o 'text="[^"]*"' "$ui" | sed 's/^text="//; s/"$//' \
     | grep -v '^$' | head -8 | paste -sd '|' -)
-  note "clearing a dialog that is blocking setup: ${text:-no text}"
   printf '%s\n' "$text" >> "$EVIDENCE_DIR/dialogs-cleared.txt"
+
+  # An acknowledgement the run can continue past is one thing; a failure report
+  # is another. Tapping OK on "has entered an illegal state" dismissed the only
+  # statement of what went wrong and left the gate waiting for a setup that had
+  # already given up, which is what runs 5, 6 and 7 each spent their whole
+  # budget doing.
+  if [[ $text == *"illegal state"* || $text == *"Failed to extract"* ]]; then
+    fail "setup reported a failure it cannot continue past: $text"
+  fi
+
+  note "clearing a dialog that is blocking setup: ${text:-no text}"
   tap_any_positive_dialog
 }
 
