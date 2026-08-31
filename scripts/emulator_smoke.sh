@@ -433,26 +433,38 @@ extraction_has_settled() {
 # always reachable when the diagnosis is needed.
 report_extraction_diagnosis() {
   note "extraction diagnosis for $PACKAGE_ID"
-  note "  rootfs archives on disk:"
-  adb shell "find $APP_FILES -name 'rootfs.tar.gz' -exec ls -l {} \; 2>/dev/null" \
+  # Downloaded payloads keep their catalogue name, "<repo>-rootfs.tar.gz-<version>",
+  # until they are staged. Matching the bare name saw neither the payload waiting
+  # in downloads/ nor a partial one, and reported an empty disk that was not empty.
+  note "  anything rootfs-shaped on disk:"
+  adb shell "find $APP_FILES -name '*rootfs*' -exec ls -l {} \; 2>/dev/null" \
     | tr -d '\r' | sed 's/^/    /' || true
   note "  extraction markers:"
   adb shell "find $APP_FILES -name '.success_filesystem_extraction' \
     -o -name '.failure_filesystem_extraction' 2>/dev/null" \
+    | tr -d '\r' | sed 's/^/    /' || true
+  note "  app files tree:"
+  adb shell "find $APP_FILES -maxdepth 2 2>/dev/null" \
     | tr -d '\r' | sed 's/^/    /' || true
   note "  entries unpacked under each filesystem root:"
   adb shell "for d in $APP_FILES/[0-9]*; do \
     [ -d \"\$d\" ] && echo \"\$d \$(find \"\$d\" | wc -l)\"; done 2>/dev/null" \
     | tr -d '\r' | sed 's/^/    /' || true
   note "  free storage (setup blocks on a dialog between 251MB and 1000MB free):"
-  adb shell "df -m /data 2>/dev/null | tail -1" | tr -d '\r' | sed 's/^/    /' || true
+  adb shell "df /data 2>/dev/null" | tr -d '\r' | sed 's/^/    /' || true
   note "  busybox and tar processes:"
   adb shell "ps -A -o NAME 2>/dev/null | grep -iE 'busybox|tar|proot'" \
     | tr -d '\r' | sed 's/^/    /' || true
+  # The state machine's own trace. Filtering on extraction words instead hid every
+  # breadcrumb after the downloads began, which is exactly the part in question.
+  note "  last state machine breadcrumbs:"
+  adb logcat -d 2>/dev/null | grep -aE 'Breadcrumb|FSM' \
+    | tail -25 | cut -c1-320 | sed 's/^/    /' || true
   note "  last app-scoped log lines:"
   adb logcat -d 2>/dev/null \
-    | grep -iE 'extract|rootfs|busybox|tar:|filesystem' \
-    | tail -40 | sed 's/^/    /' || true
+    | grep -aiE 'extract|rootfs|busybox|tar:|filesystem' \
+    | grep -av 'Breadcrumb' \
+    | tail -25 | cut -c1-320 | sed 's/^/    /' || true
 }
 
 # Every success marker must sit beside a filesystem that actually works. This is
