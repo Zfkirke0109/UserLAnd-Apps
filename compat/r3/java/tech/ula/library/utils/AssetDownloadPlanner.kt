@@ -165,3 +165,17 @@ object AssetDownloadPlanner {
 fun signalBelongsToBatch(batch: DownloadBatch?, downloadsAreInProgress: Boolean): Boolean {
     return batch != null && downloadsAreInProgress
 }
+
+/**
+ * Whether there is journalled state the machine has not acted on yet.
+ *
+ * The state machine calls this when it resumes, to notice a batch that
+ * finished while nothing was listening: a large asset can take minutes, and
+ * the live completion signal is delivered in process, so it is lost if the UI
+ * was not there to receive it. Answering false for a completed batch skips the
+ * recovery in exactly the case it exists for, which strands setup in
+ * DownloadingAssets with every byte already on disk. A batch that has been
+ * acted on is cleared from the journal, so its absence is what ends the sync,
+ * not its state.
+ */
+fun hasCachedStateToSync(batch: DownloadBatch?): Boolean = batch != null
