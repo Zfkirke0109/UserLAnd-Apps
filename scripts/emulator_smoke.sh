@@ -429,6 +429,15 @@ extraction_has_settled() {
     report_extraction_diagnosis
     fail "setup recorded an extraction failure at $marker"
   fi
+  # Losing the session mid-setup has two exits. One logs an illegal state and is
+  # caught as a forbidden signature; the other just posts
+  # ProgressBarOperationComplete and resets, leaving nothing to find. Support
+  # files are never cleared during a first run, so that state can only mean setup
+  # ended here without ever attempting extraction.
+  if adb logcat -d 2>/dev/null | grep -aq 'ProgressBarOperationComplete'; then
+    report_extraction_diagnosis
+    fail "setup ended without attempting extraction (it reset itself)"
+  fi
   return 1
 }
 

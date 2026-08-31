@@ -213,6 +213,25 @@ class EmulatorGateBehaviorTests(unittest.TestCase):
         self.assertIn("Low available storage",
                       (self.evidence / "dialogs-cleared.txt").read_text())
 
+    def test_setup_resetting_itself_is_reported_not_waited_out(self):
+        """The quiet exit from losing the session leaves nothing to find.
+
+        One route logs NoSessionSelectedWhenTransitionNecessary and is caught as
+        a forbidden signature. The other posts ProgressBarOperationComplete and
+        resets: no crash, no illegal transition, no extraction marker. Support
+        files are never cleared during a first run, so during the extraction wait
+        that state can only mean setup ended without attempting extraction.
+        """
+        self.build_device(marker=False)
+        result = self.run_gate(
+            logcat="State observed MainVM: ProgressBarOperationComplete"
+        )
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("reset itself", result.stderr)
+        self.assertNotIn("timed out", result.stderr)
+        self.assertIn("extraction diagnosis", result.stdout)
+
     def test_a_recorded_extraction_failure_is_reported_not_waited_out(self):
         """The app writes a verdict either way.
 
