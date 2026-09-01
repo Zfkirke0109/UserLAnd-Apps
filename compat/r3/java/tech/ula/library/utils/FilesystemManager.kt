@@ -180,7 +180,11 @@ class FilesystemManager(
             )
         }
 
-        archive.delete()
+        // Only this filesystem's own copy is ours to remove. The distribution
+        // directory holds the payload every filesystem of that distribution is
+        // built from, and copyAssetsToFilesystem reads it, so deleting it here
+        // would cost the next filesystem a fresh download of the whole thing.
+        if (archive.parentFile == supportDirectory) archive.delete()
         successMarker.createNewFile()
         return@withContext SuccessfulExecution
     }

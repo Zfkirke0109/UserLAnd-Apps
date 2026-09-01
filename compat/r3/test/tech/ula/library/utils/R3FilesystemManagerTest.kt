@@ -531,4 +531,41 @@ class R3FilesystemManagerTest {
         )
         assertTrue(failureMarker.exists())
     }
+
+    /**
+     * The distribution directory holds the payload every filesystem of that
+     * distribution is built from, and copyAssetsToFilesystem reads it. Extracting
+     * from it must not consume it, or the next filesystem pays for a fresh
+     * download of the whole thing.
+     */
+    @Test
+    fun `Extracting from the staged payload leaves it for the next filesystem`() {
+        createStagedArchive()
+        stubArchiveListing("./bin/sh", "./etc/passwd")
+        stubExtraction(SuccessfulExecution)
+        stubUserCreation(SuccessfulExecution)
+
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertTrue(result is SuccessfulExecution)
+        val staged = File(File(tempFolder.root, filesystem.distributionType), "rootfs.tar.gz")
+        assertTrue(staged.exists())
+    }
+
+    @Test
+    fun `Extraction consumes this filesystem's own copy of the payload`() {
+        createDownloadedArchive()
+        stubArchiveListing("./bin/sh", "./etc/passwd")
+        stubExtraction(SuccessfulExecution)
+        stubUserCreation(SuccessfulExecution)
+
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertTrue(result is SuccessfulExecution)
+        assertFalse(archive.exists())
+    }
 }
