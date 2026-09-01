@@ -191,11 +191,23 @@ class AssetDownloader(
         downloadFiles.forEach {
             if (it.name.endsWith(".json") || it.name.endsWith(".part")) {
                 return@forEach
-            } else if (it.name.contains("rootfs.tar.gz")) {
-                moveRootfsAssetInternal(it)
-                return@forEach
             }
-            extractAssets(it, stagingDirectory, archiverFactory)
+            // The state machine turns any failure here into LocalDirectoryCopyFailed
+            // and discards the exception, so the only report a user or a log ever
+            // sees is "Failed to copy assets to local storage" with no cause. Name
+            // the payload being staged and carry the original as the cause.
+            try {
+                if (it.name.contains("rootfs.tar.gz")) {
+                    moveRootfsAssetInternal(it)
+                } else {
+                    extractAssets(it, stagingDirectory, archiverFactory)
+                }
+            } catch (err: Throwable) {
+                throw IOException(
+                    "staging ${it.name} (${it.length()} bytes) failed: $err",
+                    err
+                )
+            }
         }
         stagingDirectory.deleteRecursively()
         journal.clear()
