@@ -49,6 +49,29 @@ class FilesystemManager(
         }
     }
 
+    /**
+     * Finds the payload to unpack, in the support directory first and the
+     * distribution directory second.
+     *
+     * copyAssetsToFilesystem is what normally brings the payload across, and the
+     * state machine calls it only when a distribution asset is missing or out of
+     * date. rootfs.tar.gz is not one of those assets, so once the ones that are
+     * have been copied and the version recorded, a later attempt skips the copy
+     * and finds nothing here — reported as a missing download while the payload
+     * sits in the distribution directory where staging left it. Reading from
+     * there costs nothing and makes a retry work the way the first attempt did.
+     */
+    private fun resolveRootfsArchive(filesystem: Filesystem, supportDirectory: File): File {
+        val staged = File(supportDirectory, rootfsArchiveName)
+        if (staged.exists() && staged.length() > 0L) return staged
+
+        val downloaded = File(
+            "$filesDirPath/${filesystem.distributionType}",
+            rootfsArchiveName
+        )
+        return if (downloaded.exists() && downloaded.length() > 0L) downloaded else staged
+    }
+
     fun removeRootfsFilesFromFilesystem(targetFilesystemName: String) {
         val supportDirectory = File(getSupportDirectoryPath(targetFilesystemName))
         supportDirectory.walkBottomUp().forEach {
@@ -114,13 +137,13 @@ class FilesystemManager(
         val supportDirectory = File(getSupportDirectoryPath(filesystemDirName))
         val successMarker = File(supportDirectory, filesystemExtractionSuccess)
         val failureMarker = File(supportDirectory, filesystemExtractionFailure)
-        val archive = File(supportDirectory, rootfsArchiveName)
-
         filesystemRoot.mkdirs()
         supportDirectory.mkdirs()
         // A repair must never inherit the verdict of an earlier attempt.
         successMarker.delete()
         failureMarker.delete()
+
+        val archive = resolveRootfsArchive(filesystem, supportDirectory)
 
         val validation = validateRootfsArchive(archive)
         if (validation !is SuccessfulExecution) {
