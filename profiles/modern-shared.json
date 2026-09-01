@@ -307,6 +307,13 @@
       "count": 1
     },
     {
+      "type": "replace",
+      "path": "UserLAndLibrary/app/build.gradle",
+      "old": "    testOptions {\n        unitTests {\n            includeAndroidResources = true\n        }\n    }",
+      "new": "    testOptions {\n        unitTests {\n            // The library compiles against SDK 33 while the merged manifest declares\n            // foregroundServiceType=\"specialUse\", which needs 34. Its main variant\n            // never links resources so this never showed, but the unit test variant\n            // does, and AAPT rejects the flag. The R3 tests are plain JVM tests with\n            // mocks and a temporary folder; none of them read an Android resource.\n            includeAndroidResources = false\n        }\n    }",
+      "count": 1
+    },
+    {
       "type": "insert_after",
       "path": "gradle.properties",
       "anchor": "android.useAndroidX=true\n",
