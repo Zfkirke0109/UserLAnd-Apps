@@ -19,12 +19,14 @@ class BuildContractTests(unittest.TestCase):
         compiled nowhere and asserted nothing.
         """
         text = Path("scripts/build_app.sh").read_text()
-        self.assertIn("testReleaseUnitTest", text)
-        # Scoped to R3, so an upstream test that was already failing cannot turn
-        # ten app builds red for a reason that is not ours.
-        self.assertIn("tech.ula.library.*R3*", text)
+        self.assertIn(":UserLAndLibrary:testReleaseUnitTest", text)
+        # The tests live in the library module, not the thin launcher module:
+        # filtering on :app found nothing at all and failed the build. Scoped to
+        # R3 so an upstream test that was already failing cannot turn ten app
+        # builds red for a reason that is not ours.
+        self.assertIn("*R3*", text)
         self.assertLess(
-            text.index("testReleaseUnitTest"),
+            text.index(":UserLAndLibrary:testReleaseUnitTest"),
             text.index(":app:assembleRelease"),
             "the tests must run before the APK is built",
         )
