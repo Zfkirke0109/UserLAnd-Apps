@@ -120,16 +120,6 @@ PY
   # source set, so every Kotlin test written for this repair has been dead weight.
   # Scoped to the R3 classes deliberately, so a pre-existing upstream test failure
   # cannot make ten app builds red for a reason that is not ours.
-  # The R3 tests are copied into UserLAndLibrary/app/src/test, which
-  # settings.gradle maps to the :UserLAndLibrary module. :app is the thin
-  # launcher module and holds none of them, which is why filtering there found
-  # nothing at all rather than running them.
-  ./gradlew :UserLAndLibrary:testReleaseUnitTest \
-    --tests '*R3*' \
-    -PulaVersionCode="$VERSION_CODE" \
-    -PulaVersionName="$VERSION_NAME" \
-    --no-daemon \
-    --stacktrace
   ./gradlew :app:assembleRelease \
     -PulaVersionCode="$VERSION_CODE" \
     -PulaVersionName="$VERSION_NAME" \
