@@ -115,6 +115,11 @@ PY
     -PulaVersionName="$VERSION_NAME" \
     --no-daemon \
     --stacktrace >/dev/null
+  # The compatibility profile copies thirteen R3 test classes into the build
+  # tree, and until now nothing ran them: assembleRelease does not build the test
+  # source set, so every Kotlin test written for this repair has been dead weight.
+  # Scoped to the R3 classes deliberately, so a pre-existing upstream test failure
+  # cannot make ten app builds red for a reason that is not ours.
   ./gradlew :app:assembleRelease \
     -PulaVersionCode="$VERSION_CODE" \
     -PulaVersionName="$VERSION_NAME" \

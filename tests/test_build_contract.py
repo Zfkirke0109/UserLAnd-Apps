@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -10,6 +11,8 @@ class BuildContractTests(unittest.TestCase):
         self.assertIn(":app:assembleRelease", text)
         self.assertIn("ulaVersionCode", text)
         self.assertIn("ulaVersionName", text)
+
+
 
     def test_build_requires_restored_dependencies(self):
         text = Path("scripts/build_app.sh").read_text()

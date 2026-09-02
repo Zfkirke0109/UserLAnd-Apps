@@ -87,6 +87,14 @@ class R3FilesystemManagerTest {
         archive.writeText("gzip bytes")
     }
 
+    // Staging leaves the payload here, named for the distribution rather than
+    // the filesystem. copyAssetsToFilesystem is what usually brings it across.
+    private fun createStagedArchive() {
+        val distribution = File(tempFolder.root, filesystem.distributionType)
+        distribution.mkdirs()
+        File(distribution, "rootfs.tar.gz").writeText("gzip bytes")
+    }
+
     private fun stubArchiveListing(vararg members: String) {
         whenever(
             busyboxExecutor.runHostApplet(
@@ -481,5 +489,83 @@ class R3FilesystemManagerTest {
 
         assertFalse(successMarker.exists())
         assertTrue(failureMarker.exists())
+    }
+
+    /**
+     * Reported from a real device: every attempt after the first says the
+     * download is missing or empty.
+     *
+     * copyAssetsToFilesystem is what puts the payload in the support directory,
+     * and the state machine only calls it when a distribution asset is absent or
+     * out of date. rootfs.tar.gz is not one of those assets, so once the twelve
+     * that are have been copied and the version recorded, the copy is skipped and
+     * the payload is never brought across again. Extraction then looks in the
+     * support directory, finds nothing, and reports the download missing when it
+     * is sitting in the distribution directory the whole time.
+     */
+    @Test
+    fun `Extraction uses the staged payload when the support copy is absent`() {
+        createStagedArchive()
+        stubArchiveListing("./bin/sh", "./etc/passwd")
+        stubExtraction(SuccessfulExecution)
+        stubUserCreation(SuccessfulExecution)
+
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertTrue(result is SuccessfulExecution)
+        assertTrue(successMarker.exists())
+        assertFalse(failureMarker.exists())
+    }
+
+    @Test
+    fun `Extraction still reports a missing payload when there is none anywhere`() {
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertEquals(
+            FailedExecution("The rootfs.tar.gz download is missing or empty."),
+            result
+        )
+        assertTrue(failureMarker.exists())
+    }
+
+    /**
+     * The distribution directory holds the payload every filesystem of that
+     * distribution is built from, and copyAssetsToFilesystem reads it. Extracting
+     * from it must not consume it, or the next filesystem pays for a fresh
+     * download of the whole thing.
+     */
+    @Test
+    fun `Extracting from the staged payload leaves it for the next filesystem`() {
+        createStagedArchive()
+        stubArchiveListing("./bin/sh", "./etc/passwd")
+        stubExtraction(SuccessfulExecution)
+        stubUserCreation(SuccessfulExecution)
+
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertTrue(result is SuccessfulExecution)
+        val staged = File(File(tempFolder.root, filesystem.distributionType), "rootfs.tar.gz")
+        assertTrue(staged.exists())
+    }
+
+    @Test
+    fun `Extraction consumes this filesystem's own copy of the payload`() {
+        createDownloadedArchive()
+        stubArchiveListing("./bin/sh", "./etc/passwd")
+        stubExtraction(SuccessfulExecution)
+        stubUserCreation(SuccessfulExecution)
+
+        val result = runBlocking {
+            filesystemManager.extractFilesystem(filesystem, statelessListener)
+        }
+
+        assertTrue(result is SuccessfulExecution)
+        assertFalse(archive.exists())
     }
 }

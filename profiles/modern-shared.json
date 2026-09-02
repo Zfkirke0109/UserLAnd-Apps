@@ -17,7 +17,7 @@
       "type": "copy_file",
       "path": "UserLAndLibrary/app/src/test/java/tech/ula/library/utils/R3FilesystemManagerTest.kt",
       "source": "compat/r3/test/tech/ula/library/utils/R3FilesystemManagerTest.kt",
-      "sha256": "74a161318d32a1ded38710a8222742d6c4ff7b3c333060a244f36df1b3d2f566"
+      "sha256": "d57ee6743d0cd45dd5b058a7186d00fb70378b0e49ba37d14c37f1af84d5c0aa"
     },
     {
       "type": "copy_file",
